@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArmoireMaline - Détection d'outils manquants</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 ArmoireMaline</h1>
+            <p class="subtitle">Détection automatique d'outils manquants</p>
+        </header>
+
+        <main>
+            <!-- Section Upload -->
+            <section class="upload-section">
+                <div class="upload-grid">
+                    <!-- Image de référence -->
+                    <div class="upload-card" id="reference-card">
+                        <h3>📸 Photo de référence</h3>
+                        <p class="description">Armoire complète (état initial)</p>
+                        <div class="drop-zone" id="reference-drop">
+                            <input type="file" id="reference-input" accept="image/*" hidden>
+                            <div class="drop-content">
+                                <span class="drop-icon">📁</span>
+                                <p>Glissez une image ou cliquez pour sélectionner</p>
+                            </div>
+                            <img id="reference-preview" class="preview hidden" alt="Référence">
+                        </div>
+                        <button class="btn btn-secondary btn-clear hidden" id="clear-reference">
+                            Supprimer
+                        </button>
+                    </div>
+
+                    <!-- Image actuelle -->
+                    <div class="upload-card" id="current-card">
+                        <h3>📷 Photo actuelle</h3>
+                        <p class="description">Armoire à vérifier (état actuel)</p>
+                        <div class="drop-zone" id="current-drop">
+                            <input type="file" id="current-input" accept="image/*" hidden>
+                            <div class="drop-content">
+                                <span class="drop-icon">📁</span>
+                                <p>Glissez une image ou cliquez pour sélectionner</p>
+                            </div>
+                            <img id="current-preview" class="preview hidden" alt="Actuelle">
+                        </div>
+                        <button class="btn btn-secondary btn-clear hidden" id="clear-current">
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bouton d'analyse -->
+                <div class="analyze-container">
+                    <button class="btn btn-primary btn-analyze" id="analyze-btn" disabled>
+                        🔍 Analyser les différences
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section Options (collapsible) -->
+            <section class="options-section">
+                <details>
+                    <summary>⚙️ Options avancées</summary>
+                    <div class="options-grid">
+                        <div class="option-group">
+                            <label for="threshold">Seuil de détection</label>
+                            <input type="range" id="threshold" min="10" max="100" value="30">
+                            <span class="option-value" id="threshold-value">30</span>
+                        </div>
+                        <div class="option-group">
+                            <label for="min-area">Taille minimum (pixels²)</label>
+                            <input type="range" id="min-area" min="100" max="2000" value="500">
+                            <span class="option-value" id="min-area-value">500</span>
+                        </div>
+                        <div class="option-group">
+                            <label>
+                                <input type="checkbox" id="align-images" checked>
+                                Alignement automatique des images
+                            </label>
+                        </div>
+                    </div>
+                </details>
+            </section>
+
+            <!-- Section Résultats -->
+            <section class="results-section hidden" id="results-section">
+                <h2>📊 Résultats de l'analyse</h2>
+
+                <!-- Résumé -->
+                <div class="summary-card" id="summary">
+                    <div class="summary-icon">⚠️</div>
+                    <div class="summary-text">
+                        <span class="missing-count" id="missing-count">0</span>
+                        <span class="missing-label">outil(s) manquant(s)</span>
+                    </div>
+                </div>
+
+                <!-- Image résultat -->
+                <div class="result-image-container">
+                    <div class="result-tabs">
+                        <button class="tab active" data-tab="result">Résultat</button>
+                        <button class="tab" data-tab="difference">Différences</button>
+                        <button class="tab" data-tab="comparison">Comparaison</button>
+                    </div>
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="tab-result">
+                            <img id="result-image" alt="Résultat">
+                        </div>
+                        <div class="tab-pane" id="tab-difference">
+                            <img id="difference-image" alt="Différences">
+                        </div>
+                        <div class="tab-pane" id="tab-comparison">
+                            <div class="comparison-view">
+                                <div class="comparison-item">
+                                    <span>Référence</span>
+                                    <img id="comparison-ref" alt="Référence">
+                                </div>
+                                <div class="comparison-item">
+                                    <span>Actuelle</span>
+                                    <img id="comparison-cur" alt="Actuelle">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liste des zones manquantes -->
+                <div class="missing-list" id="missing-list">
+                    <h3>Zones détectées</h3>
+                    <ul id="zones-list"></ul>
+                </div>
+
+                <!-- Infos d'alignement -->
+                <div class="alignment-info" id="alignment-info">
+                    <span class="alignment-status"></span>
+                    <span class="alignment-details"></span>
+                </div>
+            </section>
+
+            <!-- Loading -->
+            <div class="loading hidden" id="loading">
+                <div class="spinner"></div>
+                <p>Analyse en cours...</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>ArmoireMaline v1.0 - Détection par vision par ordinateur</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

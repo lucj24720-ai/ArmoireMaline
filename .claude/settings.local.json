@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python app.py:*)",
+      "Bash(py:*)",
+      "Bash(\"/c/Users/Supervision/AppData/Local/Microsoft/WindowsApps/python.exe\" --version)",
+      "Bash(ls:*)",
+      "Bash(cmd.exe /c \"where python\")",
+      "Bash(cmd.exe /c \"py --version\")",
+      "Bash(cmd.exe /c \"py --version && echo OK\")",
+      "Bash(powershell.exe -Command \"py --version\")",
+      "Bash(powershell.exe -Command:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

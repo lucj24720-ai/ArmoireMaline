@@ -1,0 +1,19 @@
+# Core dependencies
+flask==3.0.0
+flask-cors==4.0.0
+werkzeug==3.0.1
+
+# Computer Vision - Solution Simple
+opencv-python==4.9.0.80
+numpy==1.26.3
+pillow==10.2.0
+scikit-image==0.22.0
+
+# AI Solution (optional - uncomment if using AI)
+# torch==2.1.2
+# torchvision==0.16.2
+# ultralytics==8.1.0        # YOLO
+# segment-anything==1.0     # SAM
+
+# Utilities
+python-dotenv==1.0.0
