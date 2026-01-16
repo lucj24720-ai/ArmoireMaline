@@ -51,48 +51,6 @@
 
         .subtitle { color: var(--text-light); font-size: 1rem; }
 
-        /* Steps indicator */
-        .steps {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-
-        .step {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: var(--surface);
-            border-radius: 20px;
-            font-size: 0.9rem;
-            color: var(--text-light);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .step.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        .step.done {
-            background: var(--success);
-            color: white;
-        }
-
-        .step-num {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-        }
-
         /* Cards */
         .card {
             background: var(--surface);
@@ -107,19 +65,28 @@
 
         .hidden { display: none !important; }
 
+        /* Upload grid */
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
         /* Drop zone */
         .drop-zone {
             border: 2px dashed var(--border);
             border-radius: 12px;
-            padding: 40px 20px;
+            padding: 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
-            min-height: 150px;
+            min-height: 200px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            position: relative;
         }
 
         .drop-zone:hover, .drop-zone.dragover {
@@ -127,93 +94,83 @@
             background: rgba(37, 99, 235, 0.05);
         }
 
+        .drop-zone.has-image {
+            padding: 10px;
+        }
+
+        .drop-zone.has-image .drop-content { display: none; }
+
+        .drop-zone img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .drop-zone.has-image img { display: block; }
+
         .drop-icon { font-size: 2.5rem; margin-bottom: 8px; }
 
-        /* Drawing canvas */
-        .drawing-container {
-            position: relative;
-            display: inline-block;
-            max-width: 100%;
-        }
-
-        .drawing-container img {
-            max-width: 100%;
-            max-height: 60vh;
-            border-radius: 8px;
-            display: block;
-        }
-
-        .drawing-container canvas {
+        .clear-btn {
             position: absolute;
-            top: 0;
-            left: 0;
-            border-radius: 8px;
-            cursor: crosshair;
+            top: 10px;
+            right: 10px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: none;
+            font-size: 1.2rem;
+            line-height: 1;
         }
 
-        /* Toolbar */
-        .toolbar {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
+        .drop-zone.has-image .clear-btn { display: block; }
 
-        .toolbar-group {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-            padding: 4px;
+        /* Options */
+        .options-section {
             background: var(--bg);
             border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
         }
 
-        .tool-btn {
-            padding: 8px 12px;
-            border: none;
-            background: transparent;
-            border-radius: 6px;
+        .options-section summary {
             cursor: pointer;
-            font-size: 1.1rem;
-            transition: all 0.2s;
-        }
-
-        .tool-btn:hover { background: var(--border); }
-        .tool-btn.active { background: var(--primary); color: white; }
-
-        .color-picker {
-            width: 36px;
-            height: 36px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            padding: 2px;
-        }
-
-        .stroke-width {
-            width: 80px;
-            height: 36px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 0 8px;
-        }
-
-        .zones-count {
-            padding: 8px 16px;
-            background: var(--primary);
-            color: white;
-            border-radius: 20px;
             font-weight: 600;
+            padding: 4px 0;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            padding-top: 16px;
+        }
+
+        .option-group label {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 8px;
             font-size: 0.9rem;
+        }
+
+        .option-group input[type="range"] { width: 100%; }
+
+        .option-value {
+            font-size: 0.85rem;
+            color: var(--primary);
+            font-weight: 600;
         }
 
         /* Buttons */
         .btn {
-            padding: 12px 24px;
+            padding: 14px 28px;
             border: none;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -241,21 +198,18 @@
             border: 1px solid var(--border);
         }
 
-        .btn-secondary:hover { background: var(--bg); }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-            flex-wrap: wrap;
+        .analyze-container {
+            text-align: center;
+            margin: 24px 0;
         }
 
         /* Results */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.visible { display: block; }
+
         .summary-card {
             display: flex;
             align-items: center;
@@ -274,48 +228,60 @@
         .missing-count { font-size: 2.5rem; font-weight: 700; }
         .missing-label { color: var(--text-light); display: block; }
 
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-light);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab:hover { color: var(--text); background: var(--bg); }
+        .tab.active { color: var(--primary); background: rgba(37, 99, 235, 0.1); font-weight: 600; }
+
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
         .result-image {
             max-width: 100%;
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
-        .zones-list {
-            margin-top: 16px;
-            padding: 16px;
-            background: var(--bg);
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .comparison-item { text-align: center; }
+        .comparison-item span {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+        .comparison-item img {
+            width: 100%;
             border-radius: 8px;
         }
-
-        .zones-list h4 { margin-bottom: 12px; }
-
-        .zone-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: var(--surface);
-            border-radius: 6px;
-            margin-bottom: 8px;
-        }
-
-        .zone-item.missing { border-left: 4px solid var(--danger); }
-        .zone-item.present { border-left: 4px solid var(--success); }
-
-        .zone-status {
-            font-size: 0.85rem;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-
-        .zone-status.missing { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-        .zone-status.present { background: rgba(16, 185, 129, 0.1); color: var(--success); }
 
         /* Loading */
         .loading {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
             display: none;
             flex-direction: column;
             align-items: center;
@@ -326,8 +292,8 @@
         .loading.visible { display: flex; }
 
         .spinner {
-            width: 50px; height: 50px;
-            border: 4px solid var(--border);
+            width: 60px; height: 60px;
+            border: 5px solid var(--border);
             border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -335,7 +301,7 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .loading p { margin-top: 16px; color: var(--text-light); }
+        .loading p { margin-top: 20px; color: var(--text-light); font-size: 1.1rem; }
 
         footer {
             text-align: center;
@@ -344,12 +310,13 @@
             font-size: 0.85rem;
         }
 
+        /* Responsive */
         @media (max-width: 768px) {
             header h1 { font-size: 1.6rem; }
-            .steps { gap: 4px; }
-            .step { padding: 6px 10px; font-size: 0.8rem; }
-            .toolbar { justify-content: center; }
-            .btn { padding: 10px 16px; font-size: 0.9rem; }
+            .upload-grid { grid-template-columns: 1fr; }
+            .comparison-grid { grid-template-columns: 1fr; }
+            .btn { padding: 12px 20px; font-size: 1rem; width: 100%; }
+            .options-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -357,116 +324,107 @@
     <div class="container">
         <header>
             <h1>🔧 ArmoireMaline</h1>
-            <p class="subtitle">Entourez vos outils, puis vérifiez s'ils sont toujours là</p>
+            <p class="subtitle">Détection automatique d'outils manquants</p>
         </header>
 
-        <!-- Steps indicator -->
-        <div class="steps">
-            <div class="step active" id="step1">
-                <span class="step-num">1</span>
-                <span>Photo référence</span>
-            </div>
-            <div class="step" id="step2">
-                <span class="step-num">2</span>
-                <span>Entourer outils</span>
-            </div>
-            <div class="step" id="step3">
-                <span class="step-num">3</span>
-                <span>Photo actuelle</span>
-            </div>
-            <div class="step" id="step4">
-                <span class="step-num">4</span>
-                <span>Résultats</span>
-            </div>
-        </div>
-
         <main>
-            <!-- ÉTAPE 1: Upload référence -->
-            <section class="card" id="section1">
-                <h3>📸 Étape 1 : Chargez la photo de référence</h3>
-                <p class="desc">Prenez une photo de votre armoire avec tous les outils en place</p>
-                <div class="drop-zone" id="refDrop">
-                    <input type="file" id="refInput" accept="image/*" capture="environment" hidden>
-                    <span class="drop-icon">📁</span>
-                    <p>Cliquez ou glissez une image</p>
-                </div>
-            </section>
-
-            <!-- ÉTAPE 2: Dessiner les zones -->
-            <section class="card hidden" id="section2">
-                <h3>✏️ Étape 2 : Entourez chaque outil</h3>
-                <p class="desc">Dessinez un rectangle autour de chaque outil que vous voulez surveiller</p>
-
-                <div class="toolbar">
-                    <div class="toolbar-group">
-                        <button class="tool-btn active" id="toolRect" title="Rectangle">▢</button>
-                        <button class="tool-btn" id="toolUndo" title="Annuler">↩️</button>
-                        <button class="tool-btn" id="toolClear" title="Tout effacer">🗑️</button>
+            <!-- Upload Section -->
+            <div class="card">
+                <div class="upload-grid">
+                    <!-- Référence -->
+                    <div>
+                        <h3>📸 Photo de référence</h3>
+                        <p class="desc">Armoire complète (tous les outils)</p>
+                        <div class="drop-zone" id="refDrop">
+                            <input type="file" id="refInput" accept="image/*" capture="environment" hidden>
+                            <div class="drop-content">
+                                <span class="drop-icon">📁</span>
+                                <p>Cliquez ou glissez</p>
+                            </div>
+                            <img id="refPreview" alt="Référence">
+                            <button class="clear-btn" id="clearRef">×</button>
+                        </div>
                     </div>
-                    <div class="toolbar-group">
-                        <input type="color" class="color-picker" id="colorPicker" value="#00ff00" title="Couleur">
-                        <select class="stroke-width" id="strokeWidth" title="Épaisseur">
-                            <option value="2">Fine</option>
-                            <option value="4" selected>Moyenne</option>
-                            <option value="6">Épaisse</option>
-                        </select>
+
+                    <!-- Actuelle -->
+                    <div>
+                        <h3>📷 Photo actuelle</h3>
+                        <p class="desc">Armoire à vérifier</p>
+                        <div class="drop-zone" id="curDrop">
+                            <input type="file" id="curInput" accept="image/*" capture="environment" hidden>
+                            <div class="drop-content">
+                                <span class="drop-icon">📁</span>
+                                <p>Cliquez ou glissez</p>
+                            </div>
+                            <img id="curPreview" alt="Actuelle">
+                            <button class="clear-btn" id="clearCur">×</button>
+                        </div>
                     </div>
-                    <div class="zones-count" id="zonesCount">0 zone(s)</div>
                 </div>
 
-                <div class="drawing-container" id="drawingContainer">
-                    <img id="refImage" alt="Référence">
-                    <canvas id="drawCanvas"></canvas>
-                </div>
+                <!-- Options -->
+                <details class="options-section">
+                    <summary>⚙️ Options de détection</summary>
+                    <div class="options-grid">
+                        <div class="option-group">
+                            <label>Sensibilité : <span class="option-value" id="sensitivityVal">Moyenne</span></label>
+                            <input type="range" id="sensitivity" min="1" max="5" value="3">
+                        </div>
+                        <div class="option-group">
+                            <label>Taille minimum : <span class="option-value" id="minSizeVal">Moyenne</span></label>
+                            <input type="range" id="minSize" min="1" max="5" value="3">
+                        </div>
+                    </div>
+                </details>
 
-                <div class="btn-group">
-                    <button class="btn btn-secondary" id="backToStep1">← Retour</button>
-                    <button class="btn btn-primary" id="goToStep3" disabled>Continuer →</button>
+                <div class="analyze-container">
+                    <button class="btn btn-primary" id="analyzeBtn" disabled>
+                        🔍 Analyser les différences
+                    </button>
                 </div>
-            </section>
+            </div>
 
-            <!-- ÉTAPE 3: Upload actuelle -->
-            <section class="card hidden" id="section3">
-                <h3>📷 Étape 3 : Chargez la photo actuelle</h3>
-                <p class="desc">Prenez une nouvelle photo de l'armoire pour vérifier les outils</p>
-                <div class="drop-zone" id="curDrop">
-                    <input type="file" id="curInput" accept="image/*" capture="environment" hidden>
-                    <span class="drop-icon">📁</span>
-                    <p>Cliquez ou glissez une image</p>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-secondary" id="backToStep2">← Retour</button>
-                </div>
-            </section>
-
-            <!-- ÉTAPE 4: Résultats -->
-            <section class="card hidden" id="section4">
+            <!-- Results Section -->
+            <section class="card results-section" id="resultsSection">
                 <h3>📊 Résultats de l'analyse</h3>
 
                 <div class="summary-card" id="summary">
                     <div class="summary-icon" id="summaryIcon">✅</div>
                     <div>
                         <span class="missing-count" id="missingCount">0</span>
-                        <span class="missing-label">outil(s) manquant(s)</span>
+                        <span class="missing-label">outil(s) manquant(s) détecté(s)</span>
                     </div>
                 </div>
 
-                <canvas id="resultCanvas" class="result-image"></canvas>
-
-                <div class="zones-list" id="zonesList">
-                    <h4>Détail des zones :</h4>
-                    <div id="zonesDetail"></div>
+                <div class="tabs">
+                    <button class="tab active" data-tab="result">Résultat</button>
+                    <button class="tab" data-tab="diff">Différences</button>
+                    <button class="tab" data-tab="compare">Comparaison</button>
                 </div>
 
-                <div class="btn-group">
-                    <button class="btn btn-secondary" id="backToStep3">← Nouvelle photo</button>
-                    <button class="btn btn-primary" id="restart">🔄 Recommencer</button>
+                <div class="tab-pane active" id="tab-result">
+                    <canvas id="resultCanvas" class="result-image"></canvas>
+                </div>
+                <div class="tab-pane" id="tab-diff">
+                    <canvas id="diffCanvas" class="result-image"></canvas>
+                </div>
+                <div class="tab-pane" id="tab-compare">
+                    <div class="comparison-grid">
+                        <div class="comparison-item">
+                            <span>Référence</span>
+                            <img id="compareRef" alt="Référence">
+                        </div>
+                        <div class="comparison-item">
+                            <span>Actuelle</span>
+                            <img id="compareCur" alt="Actuelle">
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
 
         <footer>
-            <p>ArmoireMaline v1.0 - Détection manuelle d'outils</p>
+            <p>ArmoireMaline v2.0 - Détection intelligente d'outils manquants</p>
         </footer>
     </div>
 
@@ -476,323 +434,168 @@
     </div>
 
     <script>
-        // État de l'application
-        const state = {
-            refImageData: null,
-            curImageData: null,
-            zones: [], // Liste des rectangles dessinés {x, y, width, height}
-            currentStep: 1
-        };
-
-        // Variables de dessin
-        let isDrawing = false;
-        let startX, startY;
-        let canvasCtx;
-        let imgWidth, imgHeight;
-        let scale = 1;
+        // État
+        let refImage = null;
+        let curImage = null;
 
         // Éléments DOM
         const els = {
-            steps: [null, document.getElementById('step1'), document.getElementById('step2'),
-                    document.getElementById('step3'), document.getElementById('step4')],
-            sections: [null, document.getElementById('section1'), document.getElementById('section2'),
-                       document.getElementById('section3'), document.getElementById('section4')],
             refDrop: document.getElementById('refDrop'),
-            refInput: document.getElementById('refInput'),
-            refImage: document.getElementById('refImage'),
-            drawCanvas: document.getElementById('drawCanvas'),
-            drawingContainer: document.getElementById('drawingContainer'),
-            colorPicker: document.getElementById('colorPicker'),
-            strokeWidth: document.getElementById('strokeWidth'),
-            zonesCount: document.getElementById('zonesCount'),
-            goToStep3: document.getElementById('goToStep3'),
             curDrop: document.getElementById('curDrop'),
+            refInput: document.getElementById('refInput'),
             curInput: document.getElementById('curInput'),
-            resultCanvas: document.getElementById('resultCanvas'),
+            refPreview: document.getElementById('refPreview'),
+            curPreview: document.getElementById('curPreview'),
+            clearRef: document.getElementById('clearRef'),
+            clearCur: document.getElementById('clearCur'),
+            analyzeBtn: document.getElementById('analyzeBtn'),
+            sensitivity: document.getElementById('sensitivity'),
+            sensitivityVal: document.getElementById('sensitivityVal'),
+            minSize: document.getElementById('minSize'),
+            minSizeVal: document.getElementById('minSizeVal'),
+            resultsSection: document.getElementById('resultsSection'),
             summary: document.getElementById('summary'),
             summaryIcon: document.getElementById('summaryIcon'),
             missingCount: document.getElementById('missingCount'),
-            zonesDetail: document.getElementById('zonesDetail'),
+            resultCanvas: document.getElementById('resultCanvas'),
+            diffCanvas: document.getElementById('diffCanvas'),
+            compareRef: document.getElementById('compareRef'),
+            compareCur: document.getElementById('compareCur'),
             loading: document.getElementById('loading')
         };
 
-        // Navigation entre étapes
-        function goToStep(step) {
-            state.currentStep = step;
+        // Setup drop zones
+        function setupDropZone(dropEl, inputEl, previewEl, clearBtn, isRef) {
+            dropEl.addEventListener('click', (e) => {
+                if (e.target !== clearBtn) inputEl.click();
+            });
 
-            // Mise à jour des indicateurs
-            for (let i = 1; i <= 4; i++) {
-                els.steps[i].classList.remove('active', 'done');
-                if (i < step) els.steps[i].classList.add('done');
-                else if (i === step) els.steps[i].classList.add('active');
-            }
+            dropEl.addEventListener('dragover', e => {
+                e.preventDefault();
+                dropEl.classList.add('dragover');
+            });
 
-            // Afficher la bonne section
-            for (let i = 1; i <= 4; i++) {
-                els.sections[i].classList.toggle('hidden', i !== step);
-            }
-        }
+            dropEl.addEventListener('dragleave', () => dropEl.classList.remove('dragover'));
 
-        // ÉTAPE 1: Charger image référence
-        els.refDrop.addEventListener('click', () => els.refInput.click());
-        els.refDrop.addEventListener('dragover', e => { e.preventDefault(); els.refDrop.classList.add('dragover'); });
-        els.refDrop.addEventListener('dragleave', () => els.refDrop.classList.remove('dragover'));
-        els.refDrop.addEventListener('drop', e => {
-            e.preventDefault();
-            els.refDrop.classList.remove('dragover');
-            if (e.dataTransfer.files[0]) loadRefImage(e.dataTransfer.files[0]);
-        });
-        els.refInput.addEventListener('change', e => {
-            if (e.target.files[0]) loadRefImage(e.target.files[0]);
-        });
+            dropEl.addEventListener('drop', e => {
+                e.preventDefault();
+                dropEl.classList.remove('dragover');
+                if (e.dataTransfer.files[0]) loadImage(e.dataTransfer.files[0], previewEl, dropEl, isRef);
+            });
 
-        function loadRefImage(file) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                state.refImageData = e.target.result;
-                state.zones = [];
-                setupDrawingCanvas();
-                goToStep(2);
-            };
-            reader.readAsDataURL(file);
-        }
+            inputEl.addEventListener('change', e => {
+                if (e.target.files[0]) loadImage(e.target.files[0], previewEl, dropEl, isRef);
+            });
 
-        // ÉTAPE 2: Configuration du canvas de dessin
-        function setupDrawingCanvas() {
-            const img = els.refImage;
-            img.onload = () => {
-                imgWidth = img.naturalWidth;
-                imgHeight = img.naturalHeight;
-
-                // Calculer l'échelle d'affichage
-                const displayWidth = img.clientWidth;
-                const displayHeight = img.clientHeight;
-                scale = displayWidth / imgWidth;
-
-                // Configurer le canvas
-                els.drawCanvas.width = displayWidth;
-                els.drawCanvas.height = displayHeight;
-                canvasCtx = els.drawCanvas.getContext('2d');
-
-                redrawZones();
-            };
-            img.src = state.refImageData;
-        }
-
-        // Événements de dessin
-        els.drawCanvas.addEventListener('mousedown', startDraw);
-        els.drawCanvas.addEventListener('mousemove', drawing);
-        els.drawCanvas.addEventListener('mouseup', endDraw);
-        els.drawCanvas.addEventListener('mouseleave', endDraw);
-
-        // Touch events pour mobile
-        els.drawCanvas.addEventListener('touchstart', e => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            startDraw({ clientX: touch.clientX, clientY: touch.clientY });
-        });
-        els.drawCanvas.addEventListener('touchmove', e => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            drawing({ clientX: touch.clientX, clientY: touch.clientY });
-        });
-        els.drawCanvas.addEventListener('touchend', e => {
-            e.preventDefault();
-            endDraw();
-        });
-
-        function getCanvasCoords(e) {
-            const rect = els.drawCanvas.getBoundingClientRect();
-            return {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
-            };
-        }
-
-        function startDraw(e) {
-            const coords = getCanvasCoords(e);
-            isDrawing = true;
-            startX = coords.x;
-            startY = coords.y;
-        }
-
-        function drawing(e) {
-            if (!isDrawing) return;
-            const coords = getCanvasCoords(e);
-
-            redrawZones();
-
-            // Dessiner le rectangle en cours
-            canvasCtx.strokeStyle = els.colorPicker.value;
-            canvasCtx.lineWidth = parseInt(els.strokeWidth.value);
-            canvasCtx.strokeRect(startX, startY, coords.x - startX, coords.y - startY);
-        }
-
-        function endDraw(e) {
-            if (!isDrawing) return;
-            isDrawing = false;
-
-            if (!e) return;
-            const coords = getCanvasCoords(e);
-
-            const width = coords.x - startX;
-            const height = coords.y - startY;
-
-            // Ignorer les rectangles trop petits
-            if (Math.abs(width) > 20 && Math.abs(height) > 20) {
-                // Normaliser le rectangle (gérer les directions négatives)
-                const zone = {
-                    x: Math.min(startX, coords.x) / scale,
-                    y: Math.min(startY, coords.y) / scale,
-                    width: Math.abs(width) / scale,
-                    height: Math.abs(height) / scale,
-                    color: els.colorPicker.value
-                };
-                state.zones.push(zone);
-                updateZonesCount();
-            }
-
-            redrawZones();
-        }
-
-        function redrawZones() {
-            canvasCtx.clearRect(0, 0, els.drawCanvas.width, els.drawCanvas.height);
-
-            state.zones.forEach((zone, index) => {
-                canvasCtx.strokeStyle = zone.color;
-                canvasCtx.lineWidth = parseInt(els.strokeWidth.value);
-                canvasCtx.strokeRect(
-                    zone.x * scale,
-                    zone.y * scale,
-                    zone.width * scale,
-                    zone.height * scale
-                );
-
-                // Numéro de la zone
-                canvasCtx.fillStyle = zone.color;
-                canvasCtx.font = 'bold 16px sans-serif';
-                canvasCtx.fillText(`${index + 1}`, zone.x * scale + 5, zone.y * scale + 18);
+            clearBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                previewEl.src = '';
+                dropEl.classList.remove('has-image');
+                inputEl.value = '';
+                if (isRef) refImage = null;
+                else curImage = null;
+                updateAnalyzeBtn();
+                els.resultsSection.classList.remove('visible');
             });
         }
 
-        function updateZonesCount() {
-            els.zonesCount.textContent = `${state.zones.length} zone(s)`;
-            els.goToStep3.disabled = state.zones.length === 0;
-        }
-
-        // Boutons de la barre d'outils
-        document.getElementById('toolUndo').addEventListener('click', () => {
-            state.zones.pop();
-            redrawZones();
-            updateZonesCount();
-        });
-
-        document.getElementById('toolClear').addEventListener('click', () => {
-            state.zones = [];
-            redrawZones();
-            updateZonesCount();
-        });
-
-        // Navigation
-        document.getElementById('backToStep1').addEventListener('click', () => goToStep(1));
-        document.getElementById('goToStep3').addEventListener('click', () => goToStep(3));
-        document.getElementById('backToStep2').addEventListener('click', () => goToStep(2));
-        document.getElementById('backToStep3').addEventListener('click', () => goToStep(3));
-        document.getElementById('restart').addEventListener('click', () => {
-            state.refImageData = null;
-            state.curImageData = null;
-            state.zones = [];
-            goToStep(1);
-        });
-
-        // ÉTAPE 3: Charger image actuelle
-        els.curDrop.addEventListener('click', () => els.curInput.click());
-        els.curDrop.addEventListener('dragover', e => { e.preventDefault(); els.curDrop.classList.add('dragover'); });
-        els.curDrop.addEventListener('dragleave', () => els.curDrop.classList.remove('dragover'));
-        els.curDrop.addEventListener('drop', e => {
-            e.preventDefault();
-            els.curDrop.classList.remove('dragover');
-            if (e.dataTransfer.files[0]) loadCurImage(e.dataTransfer.files[0]);
-        });
-        els.curInput.addEventListener('change', e => {
-            if (e.target.files[0]) loadCurImage(e.target.files[0]);
-        });
-
-        function loadCurImage(file) {
+        function loadImage(file, previewEl, dropEl, isRef) {
             const reader = new FileReader();
             reader.onload = e => {
-                state.curImageData = e.target.result;
-                analyzeZones();
+                previewEl.src = e.target.result;
+                dropEl.classList.add('has-image');
+                if (isRef) refImage = e.target.result;
+                else curImage = e.target.result;
+                updateAnalyzeBtn();
             };
             reader.readAsDataURL(file);
         }
 
-        // ÉTAPE 4: Analyse des zones
-        async function analyzeZones() {
-            els.loading.classList.add('visible');
+        function updateAnalyzeBtn() {
+            els.analyzeBtn.disabled = !(refImage && curImage);
+        }
 
-            await new Promise(r => setTimeout(r, 100));
+        // Options labels
+        const sensitivityLabels = ['Très basse', 'Basse', 'Moyenne', 'Haute', 'Très haute'];
+        const minSizeLabels = ['Très petit', 'Petit', 'Moyen', 'Grand', 'Très grand'];
+
+        els.sensitivity.addEventListener('input', e => {
+            els.sensitivityVal.textContent = sensitivityLabels[e.target.value - 1];
+        });
+
+        els.minSize.addEventListener('input', e => {
+            els.minSizeVal.textContent = minSizeLabels[e.target.value - 1];
+        });
+
+        // Tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Analyze
+        els.analyzeBtn.addEventListener('click', analyze);
+
+        async function analyze() {
+            els.loading.classList.add('visible');
+            await new Promise(r => setTimeout(r, 50));
 
             try {
-                // Charger les deux images
-                const refImg = await loadImageAsync(state.refImageData);
-                const curImg = await loadImageAsync(state.curImageData);
+                const sensitivity = parseInt(els.sensitivity.value);
+                const minSizeLevel = parseInt(els.minSize.value);
 
-                // Créer des canvas pour l'analyse
-                const refCanvas = document.createElement('canvas');
-                const curCanvas = document.createElement('canvas');
+                // Paramètres basés sur les sliders
+                // Sensibilité: seuil de différence (plus haut = moins sensible)
+                const thresholds = [20, 30, 40, 55, 70];
+                const threshold = thresholds[sensitivity - 1];
 
-                refCanvas.width = refImg.width;
-                refCanvas.height = refImg.height;
-                curCanvas.width = refImg.width;
-                curCanvas.height = refImg.height;
+                // Taille minimum en pixels² (plus l'outil est gros, plus la valeur est haute)
+                const minAreas = [1000, 2500, 5000, 10000, 20000];
+                const minArea = minAreas[minSizeLevel - 1];
+
+                // Charger les images
+                const refImg = await loadImageAsync(refImage);
+                const curImg = await loadImageAsync(curImage);
+
+                // Créer les canvas
+                const width = refImg.width;
+                const height = refImg.height;
+
+                const refCanvas = createCanvas(width, height);
+                const curCanvas = createCanvas(width, height);
 
                 const refCtx = refCanvas.getContext('2d');
                 const curCtx = curCanvas.getContext('2d');
 
                 refCtx.drawImage(refImg, 0, 0);
-                curCtx.drawImage(curImg, 0, 0, refImg.width, refImg.height);
+                curCtx.drawImage(curImg, 0, 0, width, height);
 
-                // Analyser chaque zone
-                const results = [];
-                const threshold = 35; // Seuil de différence
+                // Obtenir les données des pixels
+                const refData = refCtx.getImageData(0, 0, width, height);
+                const curData = curCtx.getImageData(0, 0, width, height);
 
-                for (let i = 0; i < state.zones.length; i++) {
-                    const zone = state.zones[i];
+                // Créer le masque de différence
+                const diffMask = createDiffMask(refData, curData, width, height, threshold);
 
-                    // Extraire les pixels de la zone
-                    const refData = refCtx.getImageData(zone.x, zone.y, zone.width, zone.height);
-                    const curData = curCtx.getImageData(zone.x, zone.y, zone.width, zone.height);
+                // Nettoyer le masque (morphologie)
+                const cleanedMask = cleanMask(diffMask, width, height, minSizeLevel);
 
-                    // Calculer la différence moyenne
-                    let totalDiff = 0;
-                    let pixelCount = refData.data.length / 4;
+                // Trouver les zones connexes (outils manquants)
+                const regions = findRegions(cleanedMask, width, height, minArea);
 
-                    for (let p = 0; p < refData.data.length; p += 4) {
-                        const rDiff = Math.abs(refData.data[p] - curData.data[p]);
-                        const gDiff = Math.abs(refData.data[p+1] - curData.data[p+1]);
-                        const bDiff = Math.abs(refData.data[p+2] - curData.data[p+2]);
-                        totalDiff += (rDiff + gDiff + bDiff) / 3;
-                    }
-
-                    const avgDiff = totalDiff / pixelCount;
-                    const isMissing = avgDiff > threshold;
-
-                    results.push({
-                        zone: zone,
-                        index: i + 1,
-                        avgDiff: avgDiff,
-                        isMissing: isMissing
-                    });
-                }
+                // Filtrer les régions qui ressemblent à des outils (pas des trous)
+                const toolRegions = filterToolRegions(regions, width, height);
 
                 // Afficher les résultats
-                displayResults(results, curImg, refImg.width, refImg.height);
-                goToStep(4);
+                displayResults(toolRegions, refImg, curImg, width, height, cleanedMask);
 
             } catch (error) {
                 console.error('Erreur:', error);
-                alert('Erreur lors de l\'analyse: ' + error.message);
+                alert('Erreur: ' + error.message);
             }
 
             els.loading.classList.remove('visible');
@@ -807,17 +610,210 @@
             });
         }
 
-        function displayResults(results, curImg, width, height) {
-            const missingCount = results.filter(r => r.isMissing).length;
+        function createCanvas(width, height) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            return canvas;
+        }
+
+        function createDiffMask(refData, curData, width, height, threshold) {
+            const mask = new Uint8Array(width * height);
+            const refPx = refData.data;
+            const curPx = curData.data;
+
+            for (let i = 0; i < width * height; i++) {
+                const idx = i * 4;
+
+                // Convertir en niveaux de gris
+                const refGray = (refPx[idx] * 0.299 + refPx[idx+1] * 0.587 + refPx[idx+2] * 0.114);
+                const curGray = (curPx[idx] * 0.299 + curPx[idx+1] * 0.587 + curPx[idx+2] * 0.114);
+
+                // Différence
+                const diff = Math.abs(refGray - curGray);
+
+                // Aussi vérifier la différence de couleur
+                const rDiff = Math.abs(refPx[idx] - curPx[idx]);
+                const gDiff = Math.abs(refPx[idx+1] - curPx[idx+1]);
+                const bDiff = Math.abs(refPx[idx+2] - curPx[idx+2]);
+                const colorDiff = Math.max(rDiff, gDiff, bDiff);
+
+                // Combiner les deux critères
+                if (diff > threshold || colorDiff > threshold * 1.2) {
+                    mask[i] = 255;
+                }
+            }
+
+            return mask;
+        }
+
+        function cleanMask(mask, width, height, sizeLevel) {
+            let result = new Uint8Array(mask);
+
+            // Taille du kernel basée sur le niveau
+            const kernelSizes = [3, 5, 7, 9, 11];
+            const kernelSize = kernelSizes[sizeLevel - 1];
+            const half = Math.floor(kernelSize / 2);
+
+            // Érosion (supprime les petits points = trous du panneau)
+            let eroded = new Uint8Array(width * height);
+            for (let y = half; y < height - half; y++) {
+                for (let x = half; x < width - half; x++) {
+                    let allWhite = true;
+                    for (let ky = -half; ky <= half && allWhite; ky++) {
+                        for (let kx = -half; kx <= half && allWhite; kx++) {
+                            if (result[(y + ky) * width + (x + kx)] === 0) {
+                                allWhite = false;
+                            }
+                        }
+                    }
+                    eroded[y * width + x] = allWhite ? 255 : 0;
+                }
+            }
+
+            // Dilatation (restaure les zones restantes)
+            let dilated = new Uint8Array(width * height);
+            for (let y = half; y < height - half; y++) {
+                for (let x = half; x < width - half; x++) {
+                    let anyWhite = false;
+                    for (let ky = -half; ky <= half && !anyWhite; ky++) {
+                        for (let kx = -half; kx <= half && !anyWhite; kx++) {
+                            if (eroded[(y + ky) * width + (x + kx)] === 255) {
+                                anyWhite = true;
+                            }
+                        }
+                    }
+                    dilated[y * width + x] = anyWhite ? 255 : 0;
+                }
+            }
+
+            // Deuxième dilatation pour agrandir les zones détectées
+            result = new Uint8Array(width * height);
+            for (let y = half; y < height - half; y++) {
+                for (let x = half; x < width - half; x++) {
+                    let anyWhite = false;
+                    for (let ky = -half; ky <= half && !anyWhite; ky++) {
+                        for (let kx = -half; kx <= half && !anyWhite; kx++) {
+                            if (dilated[(y + ky) * width + (x + kx)] === 255) {
+                                anyWhite = true;
+                            }
+                        }
+                    }
+                    result[y * width + x] = anyWhite ? 255 : 0;
+                }
+            }
+
+            return result;
+        }
+
+        function findRegions(mask, width, height, minArea) {
+            const visited = new Uint8Array(width * height);
+            const regions = [];
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = y * width + x;
+                    if (mask[idx] === 255 && !visited[idx]) {
+                        // BFS pour trouver la région connectée
+                        const region = {
+                            pixels: [],
+                            minX: x, maxX: x,
+                            minY: y, maxY: y
+                        };
+
+                        const queue = [{x, y}];
+                        visited[idx] = 1;
+
+                        while (queue.length > 0) {
+                            const p = queue.shift();
+                            region.pixels.push(p);
+                            region.minX = Math.min(region.minX, p.x);
+                            region.maxX = Math.max(region.maxX, p.x);
+                            region.minY = Math.min(region.minY, p.y);
+                            region.maxY = Math.max(region.maxY, p.y);
+
+                            // Voisins 4-connectés
+                            const neighbors = [
+                                {x: p.x - 1, y: p.y},
+                                {x: p.x + 1, y: p.y},
+                                {x: p.x, y: p.y - 1},
+                                {x: p.x, y: p.y + 1}
+                            ];
+
+                            for (const n of neighbors) {
+                                if (n.x >= 0 && n.x < width && n.y >= 0 && n.y < height) {
+                                    const nIdx = n.y * width + n.x;
+                                    if (mask[nIdx] === 255 && !visited[nIdx]) {
+                                        visited[nIdx] = 1;
+                                        queue.push(n);
+                                    }
+                                }
+                            }
+                        }
+
+                        region.area = region.pixels.length;
+                        region.width = region.maxX - region.minX + 1;
+                        region.height = region.maxY - region.minY + 1;
+                        region.boundingBox = {
+                            x: region.minX,
+                            y: region.minY,
+                            width: region.width,
+                            height: region.height
+                        };
+
+                        // Filtrer par taille minimum
+                        if (region.area >= minArea) {
+                            regions.push(region);
+                        }
+                    }
+                }
+            }
+
+            return regions;
+        }
+
+        function filterToolRegions(regions, imgWidth, imgHeight) {
+            return regions.filter(region => {
+                const box = region.boundingBox;
+
+                // Ratio de la boîte englobante (évite les formes trop allongées ou trop carrées/petites)
+                const aspectRatio = Math.max(box.width, box.height) / (Math.min(box.width, box.height) + 1);
+
+                // Les outils ont généralement un ratio entre 1 et 15
+                if (aspectRatio > 20) return false;
+
+                // Ratio de remplissage (aire / boîte englobante)
+                const fillRatio = region.area / (box.width * box.height);
+
+                // Les trous du panneau ont souvent un faible ratio de remplissage après érosion
+                // Les outils ont généralement un ratio > 0.2
+                if (fillRatio < 0.15) return false;
+
+                // Taille minimum relative à l'image
+                const relativeArea = region.area / (imgWidth * imgHeight);
+                if (relativeArea < 0.0005) return false; // Moins de 0.05% de l'image
+
+                // Taille maximum (évite de détecter tout le fond)
+                if (relativeArea > 0.3) return false; // Plus de 30% de l'image
+
+                // Dimensions minimum absolues
+                if (box.width < 20 || box.height < 20) return false;
+
+                return true;
+            });
+        }
+
+        function displayResults(regions, refImg, curImg, width, height, mask) {
+            const count = regions.length;
 
             // Résumé
-            els.missingCount.textContent = missingCount;
+            els.missingCount.textContent = count;
             els.summary.className = 'summary-card';
 
-            if (missingCount === 0) {
+            if (count === 0) {
                 els.summary.classList.add('success');
                 els.summaryIcon.textContent = '✅';
-            } else if (missingCount <= 2) {
+            } else if (count <= 3) {
                 els.summary.classList.add('warning');
                 els.summaryIcon.textContent = '⚠️';
             } else {
@@ -825,54 +821,65 @@
                 els.summaryIcon.textContent = '🚨';
             }
 
-            // Dessiner le résultat
+            // Image résultat
             els.resultCanvas.width = width;
             els.resultCanvas.height = height;
             const ctx = els.resultCanvas.getContext('2d');
-            ctx.drawImage(curImg, 0, 0, width, height);
+            ctx.drawImage(refImg, 0, 0);
 
-            // Dessiner les zones
-            results.forEach(r => {
-                const zone = r.zone;
+            // Dessiner les zones manquantes
+            regions.forEach((region, index) => {
+                const box = region.boundingBox;
 
-                if (r.isMissing) {
-                    // Zone manquante : rouge
-                    ctx.strokeStyle = '#ef4444';
-                    ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
-                    ctx.lineWidth = 4;
-                } else {
-                    // Zone présente : vert
-                    ctx.strokeStyle = '#10b981';
-                    ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
-                    ctx.lineWidth = 3;
-                }
+                // Fond semi-transparent rouge
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+                ctx.fillRect(box.x, box.y, box.width, box.height);
 
-                ctx.fillRect(zone.x, zone.y, zone.width, zone.height);
-                ctx.strokeRect(zone.x, zone.y, zone.width, zone.height);
+                // Bordure rouge
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(box.x, box.y, box.width, box.height);
 
-                // Numéro et statut
-                ctx.fillStyle = r.isMissing ? '#ef4444' : '#10b981';
-                ctx.font = 'bold 20px sans-serif';
-                ctx.fillText(
-                    `${r.index} ${r.isMissing ? '✗' : '✓'}`,
-                    zone.x + 5,
-                    zone.y + 24
-                );
+                // Numéro
+                ctx.fillStyle = '#ef4444';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillText(`${index + 1}`, box.x + 5, box.y + 22);
             });
 
-            // Liste détaillée
-            els.zonesDetail.innerHTML = results.map(r => `
-                <div class="zone-item ${r.isMissing ? 'missing' : 'present'}">
-                    <span>Zone ${r.index}</span>
-                    <span class="zone-status ${r.isMissing ? 'missing' : 'present'}">
-                        ${r.isMissing ? '❌ Manquant' : '✅ Présent'}
-                    </span>
-                </div>
-            `).join('');
+            // Image de différence
+            els.diffCanvas.width = width;
+            els.diffCanvas.height = height;
+            const diffCtx = els.diffCanvas.getContext('2d');
+            const diffImageData = diffCtx.createImageData(width, height);
+
+            for (let i = 0; i < mask.length; i++) {
+                const idx = i * 4;
+                if (mask[i] === 255) {
+                    diffImageData.data[idx] = 255;     // R
+                    diffImageData.data[idx + 1] = 100; // G
+                    diffImageData.data[idx + 2] = 100; // B
+                    diffImageData.data[idx + 3] = 255; // A
+                } else {
+                    diffImageData.data[idx] = 50;
+                    diffImageData.data[idx + 1] = 50;
+                    diffImageData.data[idx + 2] = 50;
+                    diffImageData.data[idx + 3] = 255;
+                }
+            }
+            diffCtx.putImageData(diffImageData, 0, 0);
+
+            // Comparaison
+            els.compareRef.src = refImage;
+            els.compareCur.src = curImage;
+
+            // Afficher
+            els.resultsSection.classList.add('visible');
+            els.resultsSection.scrollIntoView({ behavior: 'smooth' });
         }
 
         // Initialisation
-        goToStep(1);
+        setupDropZone(els.refDrop, els.refInput, els.refPreview, els.clearRef, true);
+        setupDropZone(els.curDrop, els.curInput, els.curPreview, els.clearCur, false);
     </script>
 </body>
 </html>
