@@ -8,7 +8,6 @@
     <meta name="theme-color" content="#2563eb">
     <title>ArmoireMaline - Détection d'outils manquants</title>
     <link rel="manifest" href="manifest.json">
-    <script async src="https://docs.opencv.org/4.9.0/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
     <style>
         :root {
             --primary: #2563eb;
@@ -41,60 +40,74 @@
 
         header {
             text-align: center;
-            padding: 40px 20px;
+            padding: 30px 20px;
         }
 
         header h1 {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             color: var(--primary);
             margin-bottom: 8px;
         }
 
-        .subtitle { color: var(--text-light); font-size: 1.1rem; }
+        .subtitle { color: var(--text-light); font-size: 1rem; }
 
-        .status-bar {
-            background: var(--surface);
-            padding: 12px 20px;
-            border-radius: 8px;
+        /* Steps indicator */
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
             margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .step {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--surface);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: var(--text-light);
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        .status-dot {
-            width: 12px;
-            height: 12px;
+        .step.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .step.done {
+            background: var(--success);
+            color: white;
+        }
+
+        .step-num {
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            background: var(--warning);
-            animation: pulse 2s infinite;
+            background: rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
         }
 
-        .status-dot.ready { background: var(--success); animation: none; }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .upload-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .upload-card {
+        /* Cards */
+        .card {
             background: var(--surface);
             border-radius: 12px;
             padding: 24px;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
         }
 
-        .upload-card h3 { margin-bottom: 8px; }
-        .upload-card .desc { color: var(--text-light); font-size: 0.9rem; margin-bottom: 16px; }
+        .card h3 { margin-bottom: 12px; }
+        .card .desc { color: var(--text-light); font-size: 0.9rem; margin-bottom: 16px; }
 
+        .hidden { display: none !important; }
+
+        /* Drop zone */
         .drop-zone {
             border: 2px dashed var(--border);
             border-radius: 12px;
@@ -102,7 +115,7 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
-            min-height: 200px;
+            min-height: 150px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -114,20 +127,88 @@
             background: rgba(37, 99, 235, 0.05);
         }
 
-        .drop-zone.has-image { padding: 10px; }
+        .drop-icon { font-size: 2.5rem; margin-bottom: 8px; }
 
-        .drop-icon { font-size: 3rem; margin-bottom: 12px; }
-
-        .drop-zone img {
+        /* Drawing canvas */
+        .drawing-container {
+            position: relative;
+            display: inline-block;
             max-width: 100%;
-            max-height: 250px;
-            border-radius: 8px;
-            display: none;
         }
 
-        .drop-zone.has-image img { display: block; }
-        .drop-zone.has-image .drop-content { display: none; }
+        .drawing-container img {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 8px;
+            display: block;
+        }
 
+        .drawing-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            padding: 4px;
+            background: var(--bg);
+            border-radius: 8px;
+        }
+
+        .tool-btn {
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover { background: var(--border); }
+        .tool-btn.active { background: var(--primary); color: white; }
+
+        .color-picker {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .stroke-width {
+            width: 80px;
+            height: 36px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0 8px;
+        }
+
+        .zones-count {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Buttons */
         .btn {
             padding: 12px 24px;
             border: none;
@@ -145,7 +226,7 @@
 
         .btn-primary:hover:not(:disabled) {
             background: var(--primary-hover);
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
 
         .btn-primary:disabled {
@@ -158,56 +239,23 @@
             background: var(--surface);
             color: var(--text);
             border: 1px solid var(--border);
-            margin-top: 12px;
-            width: 100%;
         }
 
-        .analyze-container { text-align: center; margin: 24px 0; }
+        .btn-secondary:hover { background: var(--bg); }
 
-        .btn-analyze {
-            padding: 16px 48px;
-            font-size: 1.2rem;
+        .btn-danger {
+            background: var(--danger);
+            color: white;
         }
 
-        /* Options */
-        .options-section {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 16px 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
         }
-
-        .options-section summary {
-            cursor: pointer;
-            font-weight: 600;
-            padding: 8px 0;
-        }
-
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding-top: 16px;
-        }
-
-        .option-group label { font-weight: 500; display: block; margin-bottom: 8px; }
-
-        .option-group input[type="range"] { width: 100%; }
 
         /* Results */
-        .results-section {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            display: none;
-        }
-
-        .results-section.visible { display: block; }
-
-        .results-section h2 { text-align: center; margin-bottom: 24px; }
-
         .summary-card {
             display: flex;
             align-items: center;
@@ -224,47 +272,46 @@
 
         .summary-icon { font-size: 3rem; }
         .missing-count { font-size: 2.5rem; font-weight: 700; }
-        .missing-label { color: var(--text-light); }
+        .missing-label { color: var(--text-light); display: block; }
 
-        .result-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 8px;
-        }
-
-        .tab {
-            padding: 8px 16px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 1rem;
-            color: var(--text-light);
-            border-radius: 8px 8px 0 0;
-        }
-
-        .tab:hover { color: var(--text); background: var(--bg); }
-        .tab.active { color: var(--primary); background: rgba(37, 99, 235, 0.1); font-weight: 600; }
-
-        .tab-pane { display: none; }
-        .tab-pane.active { display: block; }
-        .tab-pane img, .tab-pane canvas {
+        .result-image {
             max-width: 100%;
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
-        .comparison-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
+        .zones-list {
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--bg);
+            border-radius: 8px;
         }
 
-        .comparison-item { text-align: center; }
-        .comparison-item span { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-light); }
-        .comparison-item img { width: 100%; }
+        .zones-list h4 { margin-bottom: 12px; }
 
+        .zone-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--surface);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .zone-item.missing { border-left: 4px solid var(--danger); }
+        .zone-item.present { border-left: 4px solid var(--success); }
+
+        .zone-status {
+            font-size: 0.85rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .zone-status.missing { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .zone-status.present { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+
+        /* Loading */
         .loading {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -294,17 +341,15 @@
             text-align: center;
             padding: 24px;
             color: var(--text-light);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
-        /* Canvas caché pour le traitement */
-        .hidden-canvas { display: none; }
-
         @media (max-width: 768px) {
-            header h1 { font-size: 1.8rem; }
-            .upload-grid { grid-template-columns: 1fr; }
-            .comparison-grid { grid-template-columns: 1fr; }
-            .btn-analyze { width: 100%; }
+            header h1 { font-size: 1.6rem; }
+            .steps { gap: 4px; }
+            .step { padding: 6px 10px; font-size: 0.8rem; }
+            .toolbar { justify-content: center; }
+            .btn { padding: 10px 16px; font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -312,115 +357,116 @@
     <div class="container">
         <header>
             <h1>🔧 ArmoireMaline</h1>
-            <p class="subtitle">Détection automatique d'outils manquants</p>
+            <p class="subtitle">Entourez vos outils, puis vérifiez s'ils sont toujours là</p>
         </header>
 
-        <div class="status-bar">
-            <div class="status-dot" id="statusDot"></div>
-            <span id="statusText">Chargement d'OpenCV.js...</span>
+        <!-- Steps indicator -->
+        <div class="steps">
+            <div class="step active" id="step1">
+                <span class="step-num">1</span>
+                <span>Photo référence</span>
+            </div>
+            <div class="step" id="step2">
+                <span class="step-num">2</span>
+                <span>Entourer outils</span>
+            </div>
+            <div class="step" id="step3">
+                <span class="step-num">3</span>
+                <span>Photo actuelle</span>
+            </div>
+            <div class="step" id="step4">
+                <span class="step-num">4</span>
+                <span>Résultats</span>
+            </div>
         </div>
 
         <main>
-            <div class="upload-grid">
-                <!-- Référence -->
-                <div class="upload-card">
-                    <h3>📸 Photo de référence</h3>
-                    <p class="desc">Armoire complète (état initial)</p>
-                    <div class="drop-zone" id="refDrop">
-                        <input type="file" id="refInput" accept="image/*" capture="environment" hidden>
-                        <div class="drop-content">
-                            <span class="drop-icon">📁</span>
-                            <p>Glissez ou cliquez pour sélectionner</p>
-                        </div>
-                        <img id="refPreview" alt="Référence">
-                    </div>
-                    <button class="btn btn-secondary" id="clearRef" style="display:none">Supprimer</button>
+            <!-- ÉTAPE 1: Upload référence -->
+            <section class="card" id="section1">
+                <h3>📸 Étape 1 : Chargez la photo de référence</h3>
+                <p class="desc">Prenez une photo de votre armoire avec tous les outils en place</p>
+                <div class="drop-zone" id="refDrop">
+                    <input type="file" id="refInput" accept="image/*" capture="environment" hidden>
+                    <span class="drop-icon">📁</span>
+                    <p>Cliquez ou glissez une image</p>
                 </div>
-
-                <!-- Actuelle -->
-                <div class="upload-card">
-                    <h3>📷 Photo actuelle</h3>
-                    <p class="desc">Armoire à vérifier</p>
-                    <div class="drop-zone" id="curDrop">
-                        <input type="file" id="curInput" accept="image/*" capture="environment" hidden>
-                        <div class="drop-content">
-                            <span class="drop-icon">📁</span>
-                            <p>Glissez ou cliquez pour sélectionner</p>
-                        </div>
-                        <img id="curPreview" alt="Actuelle">
-                    </div>
-                    <button class="btn btn-secondary" id="clearCur" style="display:none">Supprimer</button>
-                </div>
-            </div>
-
-            <div class="analyze-container">
-                <button class="btn btn-primary btn-analyze" id="analyzeBtn" disabled>
-                    🔍 Analyser les différences
-                </button>
-            </div>
-
-            <section class="options-section">
-                <details>
-                    <summary>⚙️ Options avancées</summary>
-                    <div class="options-grid">
-                        <div class="option-group">
-                            <label>Seuil de détection: <span id="thresholdVal">30</span></label>
-                            <input type="range" id="threshold" min="10" max="100" value="30">
-                        </div>
-                        <div class="option-group">
-                            <label>Taille min (px²): <span id="minAreaVal">500</span></label>
-                            <input type="range" id="minArea" min="100" max="3000" value="500">
-                        </div>
-                        <div class="option-group">
-                            <label>
-                                <input type="checkbox" id="alignCheck" checked>
-                                Alignement automatique
-                            </label>
-                        </div>
-                    </div>
-                </details>
             </section>
 
-            <section class="results-section" id="resultsSection">
-                <h2>📊 Résultats</h2>
+            <!-- ÉTAPE 2: Dessiner les zones -->
+            <section class="card hidden" id="section2">
+                <h3>✏️ Étape 2 : Entourez chaque outil</h3>
+                <p class="desc">Dessinez un rectangle autour de chaque outil que vous voulez surveiller</p>
+
+                <div class="toolbar">
+                    <div class="toolbar-group">
+                        <button class="tool-btn active" id="toolRect" title="Rectangle">▢</button>
+                        <button class="tool-btn" id="toolUndo" title="Annuler">↩️</button>
+                        <button class="tool-btn" id="toolClear" title="Tout effacer">🗑️</button>
+                    </div>
+                    <div class="toolbar-group">
+                        <input type="color" class="color-picker" id="colorPicker" value="#00ff00" title="Couleur">
+                        <select class="stroke-width" id="strokeWidth" title="Épaisseur">
+                            <option value="2">Fine</option>
+                            <option value="4" selected>Moyenne</option>
+                            <option value="6">Épaisse</option>
+                        </select>
+                    </div>
+                    <div class="zones-count" id="zonesCount">0 zone(s)</div>
+                </div>
+
+                <div class="drawing-container" id="drawingContainer">
+                    <img id="refImage" alt="Référence">
+                    <canvas id="drawCanvas"></canvas>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="backToStep1">← Retour</button>
+                    <button class="btn btn-primary" id="goToStep3" disabled>Continuer →</button>
+                </div>
+            </section>
+
+            <!-- ÉTAPE 3: Upload actuelle -->
+            <section class="card hidden" id="section3">
+                <h3>📷 Étape 3 : Chargez la photo actuelle</h3>
+                <p class="desc">Prenez une nouvelle photo de l'armoire pour vérifier les outils</p>
+                <div class="drop-zone" id="curDrop">
+                    <input type="file" id="curInput" accept="image/*" capture="environment" hidden>
+                    <span class="drop-icon">📁</span>
+                    <p>Cliquez ou glissez une image</p>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="backToStep2">← Retour</button>
+                </div>
+            </section>
+
+            <!-- ÉTAPE 4: Résultats -->
+            <section class="card hidden" id="section4">
+                <h3>📊 Résultats de l'analyse</h3>
 
                 <div class="summary-card" id="summary">
-                    <div class="summary-icon" id="summaryIcon">⚠️</div>
+                    <div class="summary-icon" id="summaryIcon">✅</div>
                     <div>
                         <span class="missing-count" id="missingCount">0</span>
                         <span class="missing-label">outil(s) manquant(s)</span>
                     </div>
                 </div>
 
-                <div class="result-tabs">
-                    <button class="tab active" data-tab="result">Résultat</button>
-                    <button class="tab" data-tab="diff">Différences</button>
-                    <button class="tab" data-tab="compare">Comparaison</button>
+                <canvas id="resultCanvas" class="result-image"></canvas>
+
+                <div class="zones-list" id="zonesList">
+                    <h4>Détail des zones :</h4>
+                    <div id="zonesDetail"></div>
                 </div>
 
-                <div class="tab-pane active" id="tab-result">
-                    <canvas id="resultCanvas"></canvas>
-                </div>
-                <div class="tab-pane" id="tab-diff">
-                    <canvas id="diffCanvas"></canvas>
-                </div>
-                <div class="tab-pane" id="tab-compare">
-                    <div class="comparison-grid">
-                        <div class="comparison-item">
-                            <span>Référence</span>
-                            <img id="compareRef" alt="Référence">
-                        </div>
-                        <div class="comparison-item">
-                            <span>Actuelle</span>
-                            <img id="compareCur" alt="Actuelle">
-                        </div>
-                    </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="backToStep3">← Nouvelle photo</button>
+                    <button class="btn btn-primary" id="restart">🔄 Recommencer</button>
                 </div>
             </section>
         </main>
 
         <footer>
-            <p>ArmoireMaline v1.0 - Détection par vision par ordinateur (OpenCV.js)</p>
+            <p>ArmoireMaline v1.0 - Détection manuelle d'outils</p>
         </footer>
     </div>
 
@@ -429,178 +475,320 @@
         <p>Analyse en cours...</p>
     </div>
 
-    <!-- Canvas cachés pour le traitement -->
-    <canvas class="hidden-canvas" id="refCanvas"></canvas>
-    <canvas class="hidden-canvas" id="curCanvas"></canvas>
-
     <script>
-        // État global
-        let cvReady = false;
-        let refImage = null;
-        let curImage = null;
+        // État de l'application
+        const state = {
+            refImageData: null,
+            curImageData: null,
+            zones: [], // Liste des rectangles dessinés {x, y, width, height}
+            currentStep: 1
+        };
 
-        // Appelé quand OpenCV est chargé
-        function onOpenCvReady() {
-            cvReady = true;
-            document.getElementById('statusDot').classList.add('ready');
-            document.getElementById('statusText').textContent = 'OpenCV.js prêt - Chargez vos images';
-            updateAnalyzeButton();
-        }
+        // Variables de dessin
+        let isDrawing = false;
+        let startX, startY;
+        let canvasCtx;
+        let imgWidth, imgHeight;
+        let scale = 1;
 
         // Éléments DOM
         const els = {
+            steps: [null, document.getElementById('step1'), document.getElementById('step2'),
+                    document.getElementById('step3'), document.getElementById('step4')],
+            sections: [null, document.getElementById('section1'), document.getElementById('section2'),
+                       document.getElementById('section3'), document.getElementById('section4')],
             refDrop: document.getElementById('refDrop'),
-            curDrop: document.getElementById('curDrop'),
             refInput: document.getElementById('refInput'),
+            refImage: document.getElementById('refImage'),
+            drawCanvas: document.getElementById('drawCanvas'),
+            drawingContainer: document.getElementById('drawingContainer'),
+            colorPicker: document.getElementById('colorPicker'),
+            strokeWidth: document.getElementById('strokeWidth'),
+            zonesCount: document.getElementById('zonesCount'),
+            goToStep3: document.getElementById('goToStep3'),
+            curDrop: document.getElementById('curDrop'),
             curInput: document.getElementById('curInput'),
-            refPreview: document.getElementById('refPreview'),
-            curPreview: document.getElementById('curPreview'),
-            clearRef: document.getElementById('clearRef'),
-            clearCur: document.getElementById('clearCur'),
-            analyzeBtn: document.getElementById('analyzeBtn'),
-            resultsSection: document.getElementById('resultsSection'),
-            loading: document.getElementById('loading'),
-            threshold: document.getElementById('threshold'),
-            thresholdVal: document.getElementById('thresholdVal'),
-            minArea: document.getElementById('minArea'),
-            minAreaVal: document.getElementById('minAreaVal'),
-            alignCheck: document.getElementById('alignCheck'),
+            resultCanvas: document.getElementById('resultCanvas'),
             summary: document.getElementById('summary'),
             summaryIcon: document.getElementById('summaryIcon'),
             missingCount: document.getElementById('missingCount'),
-            resultCanvas: document.getElementById('resultCanvas'),
-            diffCanvas: document.getElementById('diffCanvas'),
-            compareRef: document.getElementById('compareRef'),
-            compareCur: document.getElementById('compareCur'),
-            refCanvas: document.getElementById('refCanvas'),
-            curCanvas: document.getElementById('curCanvas')
+            zonesDetail: document.getElementById('zonesDetail'),
+            loading: document.getElementById('loading')
         };
 
-        // Setup drag & drop
-        function setupDropZone(dropEl, inputEl, previewEl, clearBtn, isRef) {
-            dropEl.addEventListener('click', () => inputEl.click());
+        // Navigation entre étapes
+        function goToStep(step) {
+            state.currentStep = step;
 
-            dropEl.addEventListener('dragover', e => {
-                e.preventDefault();
-                dropEl.classList.add('dragover');
-            });
+            // Mise à jour des indicateurs
+            for (let i = 1; i <= 4; i++) {
+                els.steps[i].classList.remove('active', 'done');
+                if (i < step) els.steps[i].classList.add('done');
+                else if (i === step) els.steps[i].classList.add('active');
+            }
 
-            dropEl.addEventListener('dragleave', () => dropEl.classList.remove('dragover'));
-
-            dropEl.addEventListener('drop', e => {
-                e.preventDefault();
-                dropEl.classList.remove('dragover');
-                const file = e.dataTransfer.files[0];
-                if (file && file.type.startsWith('image/')) {
-                    loadImage(file, previewEl, dropEl, clearBtn, isRef);
-                }
-            });
-
-            inputEl.addEventListener('change', e => {
-                const file = e.target.files[0];
-                if (file) loadImage(file, previewEl, dropEl, clearBtn, isRef);
-            });
-
-            clearBtn.addEventListener('click', e => {
-                e.stopPropagation();
-                clearImage(previewEl, dropEl, clearBtn, inputEl, isRef);
-            });
+            // Afficher la bonne section
+            for (let i = 1; i <= 4; i++) {
+                els.sections[i].classList.toggle('hidden', i !== step);
+            }
         }
 
-        function loadImage(file, previewEl, dropEl, clearBtn, isRef) {
+        // ÉTAPE 1: Charger image référence
+        els.refDrop.addEventListener('click', () => els.refInput.click());
+        els.refDrop.addEventListener('dragover', e => { e.preventDefault(); els.refDrop.classList.add('dragover'); });
+        els.refDrop.addEventListener('dragleave', () => els.refDrop.classList.remove('dragover'));
+        els.refDrop.addEventListener('drop', e => {
+            e.preventDefault();
+            els.refDrop.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) loadRefImage(e.dataTransfer.files[0]);
+        });
+        els.refInput.addEventListener('change', e => {
+            if (e.target.files[0]) loadRefImage(e.target.files[0]);
+        });
+
+        function loadRefImage(file) {
             const reader = new FileReader();
             reader.onload = e => {
-                previewEl.src = e.target.result;
-                dropEl.classList.add('has-image');
-                clearBtn.style.display = 'block';
-
-                if (isRef) refImage = e.target.result;
-                else curImage = e.target.result;
-
-                updateAnalyzeButton();
+                state.refImageData = e.target.result;
+                state.zones = [];
+                setupDrawingCanvas();
+                goToStep(2);
             };
             reader.readAsDataURL(file);
         }
 
-        function clearImage(previewEl, dropEl, clearBtn, inputEl, isRef) {
-            previewEl.src = '';
-            dropEl.classList.remove('has-image');
-            clearBtn.style.display = 'none';
-            inputEl.value = '';
+        // ÉTAPE 2: Configuration du canvas de dessin
+        function setupDrawingCanvas() {
+            const img = els.refImage;
+            img.onload = () => {
+                imgWidth = img.naturalWidth;
+                imgHeight = img.naturalHeight;
 
-            if (isRef) refImage = null;
-            else curImage = null;
+                // Calculer l'échelle d'affichage
+                const displayWidth = img.clientWidth;
+                const displayHeight = img.clientHeight;
+                scale = displayWidth / imgWidth;
 
-            updateAnalyzeButton();
-            els.resultsSection.classList.remove('visible');
+                // Configurer le canvas
+                els.drawCanvas.width = displayWidth;
+                els.drawCanvas.height = displayHeight;
+                canvasCtx = els.drawCanvas.getContext('2d');
+
+                redrawZones();
+            };
+            img.src = state.refImageData;
         }
 
-        function updateAnalyzeButton() {
-            els.analyzeBtn.disabled = !(cvReady && refImage && curImage);
-        }
+        // Événements de dessin
+        els.drawCanvas.addEventListener('mousedown', startDraw);
+        els.drawCanvas.addEventListener('mousemove', drawing);
+        els.drawCanvas.addEventListener('mouseup', endDraw);
+        els.drawCanvas.addEventListener('mouseleave', endDraw);
 
-        // Options
-        els.threshold.addEventListener('input', e => els.thresholdVal.textContent = e.target.value);
-        els.minArea.addEventListener('input', e => els.minAreaVal.textContent = e.target.value);
-
-        // Tabs
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-                tab.classList.add('active');
-                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
-            });
+        // Touch events pour mobile
+        els.drawCanvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            startDraw({ clientX: touch.clientX, clientY: touch.clientY });
+        });
+        els.drawCanvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            drawing({ clientX: touch.clientX, clientY: touch.clientY });
+        });
+        els.drawCanvas.addEventListener('touchend', e => {
+            e.preventDefault();
+            endDraw();
         });
 
-        // Analyse principale
-        els.analyzeBtn.addEventListener('click', analyze);
+        function getCanvasCoords(e) {
+            const rect = els.drawCanvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
 
-        async function analyze() {
+        function startDraw(e) {
+            const coords = getCanvasCoords(e);
+            isDrawing = true;
+            startX = coords.x;
+            startY = coords.y;
+        }
+
+        function drawing(e) {
+            if (!isDrawing) return;
+            const coords = getCanvasCoords(e);
+
+            redrawZones();
+
+            // Dessiner le rectangle en cours
+            canvasCtx.strokeStyle = els.colorPicker.value;
+            canvasCtx.lineWidth = parseInt(els.strokeWidth.value);
+            canvasCtx.strokeRect(startX, startY, coords.x - startX, coords.y - startY);
+        }
+
+        function endDraw(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            if (!e) return;
+            const coords = getCanvasCoords(e);
+
+            const width = coords.x - startX;
+            const height = coords.y - startY;
+
+            // Ignorer les rectangles trop petits
+            if (Math.abs(width) > 20 && Math.abs(height) > 20) {
+                // Normaliser le rectangle (gérer les directions négatives)
+                const zone = {
+                    x: Math.min(startX, coords.x) / scale,
+                    y: Math.min(startY, coords.y) / scale,
+                    width: Math.abs(width) / scale,
+                    height: Math.abs(height) / scale,
+                    color: els.colorPicker.value
+                };
+                state.zones.push(zone);
+                updateZonesCount();
+            }
+
+            redrawZones();
+        }
+
+        function redrawZones() {
+            canvasCtx.clearRect(0, 0, els.drawCanvas.width, els.drawCanvas.height);
+
+            state.zones.forEach((zone, index) => {
+                canvasCtx.strokeStyle = zone.color;
+                canvasCtx.lineWidth = parseInt(els.strokeWidth.value);
+                canvasCtx.strokeRect(
+                    zone.x * scale,
+                    zone.y * scale,
+                    zone.width * scale,
+                    zone.height * scale
+                );
+
+                // Numéro de la zone
+                canvasCtx.fillStyle = zone.color;
+                canvasCtx.font = 'bold 16px sans-serif';
+                canvasCtx.fillText(`${index + 1}`, zone.x * scale + 5, zone.y * scale + 18);
+            });
+        }
+
+        function updateZonesCount() {
+            els.zonesCount.textContent = `${state.zones.length} zone(s)`;
+            els.goToStep3.disabled = state.zones.length === 0;
+        }
+
+        // Boutons de la barre d'outils
+        document.getElementById('toolUndo').addEventListener('click', () => {
+            state.zones.pop();
+            redrawZones();
+            updateZonesCount();
+        });
+
+        document.getElementById('toolClear').addEventListener('click', () => {
+            state.zones = [];
+            redrawZones();
+            updateZonesCount();
+        });
+
+        // Navigation
+        document.getElementById('backToStep1').addEventListener('click', () => goToStep(1));
+        document.getElementById('goToStep3').addEventListener('click', () => goToStep(3));
+        document.getElementById('backToStep2').addEventListener('click', () => goToStep(2));
+        document.getElementById('backToStep3').addEventListener('click', () => goToStep(3));
+        document.getElementById('restart').addEventListener('click', () => {
+            state.refImageData = null;
+            state.curImageData = null;
+            state.zones = [];
+            goToStep(1);
+        });
+
+        // ÉTAPE 3: Charger image actuelle
+        els.curDrop.addEventListener('click', () => els.curInput.click());
+        els.curDrop.addEventListener('dragover', e => { e.preventDefault(); els.curDrop.classList.add('dragover'); });
+        els.curDrop.addEventListener('dragleave', () => els.curDrop.classList.remove('dragover'));
+        els.curDrop.addEventListener('drop', e => {
+            e.preventDefault();
+            els.curDrop.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) loadCurImage(e.dataTransfer.files[0]);
+        });
+        els.curInput.addEventListener('change', e => {
+            if (e.target.files[0]) loadCurImage(e.target.files[0]);
+        });
+
+        function loadCurImage(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                state.curImageData = e.target.result;
+                analyzeZones();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ÉTAPE 4: Analyse des zones
+        async function analyzeZones() {
             els.loading.classList.add('visible');
 
-            // Attendre que les images soient chargées dans les canvas
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(r => setTimeout(r, 100));
 
             try {
-                const threshold = parseInt(els.threshold.value);
-                const minArea = parseInt(els.minArea.value);
-                const doAlign = els.alignCheck.checked;
+                // Charger les deux images
+                const refImg = await loadImageAsync(state.refImageData);
+                const curImg = await loadImageAsync(state.curImageData);
 
-                // Charger les images dans les canvas
-                await loadImageToCanvas(refImage, els.refCanvas);
-                await loadImageToCanvas(curImage, els.curCanvas);
+                // Créer des canvas pour l'analyse
+                const refCanvas = document.createElement('canvas');
+                const curCanvas = document.createElement('canvas');
 
-                // Lire les images avec OpenCV
-                let refMat = cv.imread(els.refCanvas);
-                let curMat = cv.imread(els.curCanvas);
+                refCanvas.width = refImg.width;
+                refCanvas.height = refImg.height;
+                curCanvas.width = refImg.width;
+                curCanvas.height = refImg.height;
 
-                // Redimensionner si nécessaire
-                if (refMat.rows !== curMat.rows || refMat.cols !== curMat.cols) {
-                    let resized = new cv.Mat();
-                    cv.resize(curMat, resized, new cv.Size(refMat.cols, refMat.rows));
-                    curMat.delete();
-                    curMat = resized;
-                }
+                const refCtx = refCanvas.getContext('2d');
+                const curCtx = curCanvas.getContext('2d');
 
-                // Alignement optionnel
-                if (doAlign) {
-                    try {
-                        curMat = alignImages(refMat, curMat);
-                    } catch (e) {
-                        console.log('Alignement échoué, utilisation image brute:', e);
+                refCtx.drawImage(refImg, 0, 0);
+                curCtx.drawImage(curImg, 0, 0, refImg.width, refImg.height);
+
+                // Analyser chaque zone
+                const results = [];
+                const threshold = 35; // Seuil de différence
+
+                for (let i = 0; i < state.zones.length; i++) {
+                    const zone = state.zones[i];
+
+                    // Extraire les pixels de la zone
+                    const refData = refCtx.getImageData(zone.x, zone.y, zone.width, zone.height);
+                    const curData = curCtx.getImageData(zone.x, zone.y, zone.width, zone.height);
+
+                    // Calculer la différence moyenne
+                    let totalDiff = 0;
+                    let pixelCount = refData.data.length / 4;
+
+                    for (let p = 0; p < refData.data.length; p += 4) {
+                        const rDiff = Math.abs(refData.data[p] - curData.data[p]);
+                        const gDiff = Math.abs(refData.data[p+1] - curData.data[p+1]);
+                        const bDiff = Math.abs(refData.data[p+2] - curData.data[p+2]);
+                        totalDiff += (rDiff + gDiff + bDiff) / 3;
                     }
-                }
 
-                // Détection des différences
-                const result = detectMissingTools(refMat, curMat, threshold, minArea);
+                    const avgDiff = totalDiff / pixelCount;
+                    const isMissing = avgDiff > threshold;
+
+                    results.push({
+                        zone: zone,
+                        index: i + 1,
+                        avgDiff: avgDiff,
+                        isMissing: isMissing
+                    });
+                }
 
                 // Afficher les résultats
-                displayResults(result, refMat);
-
-                // Nettoyer
-                refMat.delete();
-                curMat.delete();
+                displayResults(results, curImg, refImg.width, refImg.height);
+                goToStep(4);
 
             } catch (error) {
                 console.error('Erreur:', error);
@@ -610,217 +798,26 @@
             els.loading.classList.remove('visible');
         }
 
-        function loadImageToCanvas(src, canvas) {
+        function loadImageAsync(src) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
-                img.onload = () => {
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    resolve();
-                };
+                img.onload = () => resolve(img);
                 img.onerror = reject;
                 img.src = src;
             });
         }
 
-        function alignImages(refMat, curMat) {
-            // Conversion en niveaux de gris
-            let refGray = new cv.Mat();
-            let curGray = new cv.Mat();
-            cv.cvtColor(refMat, refGray, cv.COLOR_RGBA2GRAY);
-            cv.cvtColor(curMat, curGray, cv.COLOR_RGBA2GRAY);
+        function displayResults(results, curImg, width, height) {
+            const missingCount = results.filter(r => r.isMissing).length;
 
-            // Détection ORB
-            let orb = new cv.ORB(500);
-            let kpRef = new cv.KeyPointVector();
-            let kpCur = new cv.KeyPointVector();
-            let descRef = new cv.Mat();
-            let descCur = new cv.Mat();
-
-            orb.detectAndCompute(refGray, new cv.Mat(), kpRef, descRef);
-            orb.detectAndCompute(curGray, new cv.Mat(), kpCur, descCur);
-
-            // Matching
-            let bf = new cv.BFMatcher(cv.NORM_HAMMING, true);
-            let matches = new cv.DMatchVector();
-            bf.match(descCur, descRef, matches);
-
-            // Trier par distance
-            let matchArray = [];
-            for (let i = 0; i < matches.size(); i++) {
-                matchArray.push(matches.get(i));
-            }
-            matchArray.sort((a, b) => a.distance - b.distance);
-
-            // Garder les meilleurs
-            const numGoodMatches = Math.min(50, matchArray.length);
-
-            if (numGoodMatches < 4) {
-                // Pas assez de matches, retourner l'image originale
-                refGray.delete(); curGray.delete();
-                descRef.delete(); descCur.delete();
-                return curMat.clone();
-            }
-
-            // Extraire les points
-            let srcPts = [];
-            let dstPts = [];
-            for (let i = 0; i < numGoodMatches; i++) {
-                let m = matchArray[i];
-                let kpC = kpCur.get(m.queryIdx);
-                let kpR = kpRef.get(m.trainIdx);
-                srcPts.push(kpC.pt.x, kpC.pt.y);
-                dstPts.push(kpR.pt.x, kpR.pt.y);
-            }
-
-            let srcMat = cv.matFromArray(numGoodMatches, 1, cv.CV_32FC2, srcPts);
-            let dstMat = cv.matFromArray(numGoodMatches, 1, cv.CV_32FC2, dstPts);
-
-            // Calcul homographie
-            let H = cv.findHomography(srcMat, dstMat, cv.RANSAC);
-
-            // Appliquer transformation
-            let aligned = new cv.Mat();
-            cv.warpPerspective(curMat, aligned, H, new cv.Size(refMat.cols, refMat.rows));
-
-            // Nettoyer
-            refGray.delete(); curGray.delete();
-            descRef.delete(); descCur.delete();
-            srcMat.delete(); dstMat.delete();
-            H.delete();
-
-            return aligned;
-        }
-
-        function detectMissingTools(refMat, curMat, threshold, minArea) {
-            // Conversion en gris
-            let refGray = new cv.Mat();
-            let curGray = new cv.Mat();
-            cv.cvtColor(refMat, refGray, cv.COLOR_RGBA2GRAY);
-            cv.cvtColor(curMat, curGray, cv.COLOR_RGBA2GRAY);
-
-            // Flou gaussien
-            let refBlur = new cv.Mat();
-            let curBlur = new cv.Mat();
-            cv.GaussianBlur(refGray, refBlur, new cv.Size(5, 5), 0);
-            cv.GaussianBlur(curGray, curBlur, new cv.Size(5, 5), 0);
-
-            // Différence absolue
-            let diff = new cv.Mat();
-            cv.absdiff(refBlur, curBlur, diff);
-
-            // Seuillage
-            let binary = new cv.Mat();
-            cv.threshold(diff, binary, threshold, 255, cv.THRESH_BINARY);
-
-            // Opérations morphologiques
-            let kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(5, 5));
-            let cleaned = new cv.Mat();
-            cv.morphologyEx(binary, cleaned, cv.MORPH_OPEN, kernel);
-            cv.morphologyEx(cleaned, cleaned, cv.MORPH_CLOSE, kernel);
-            cv.dilate(cleaned, cleaned, kernel, new cv.Point(-1, -1), 2);
-
-            // Trouver les contours
-            let contours = new cv.MatVector();
-            let hierarchy = new cv.Mat();
-            cv.findContours(cleaned, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-            // Filtrer et collecter les rectangles
-            let missingAreas = [];
-            for (let i = 0; i < contours.size(); i++) {
-                let contour = contours.get(i);
-                let area = cv.contourArea(contour);
-
-                if (area >= minArea && area <= 100000) {
-                    let rect = cv.boundingRect(contour);
-                    let aspectRatio = Math.max(rect.width, rect.height) / (Math.min(rect.width, rect.height) + 1);
-
-                    if (aspectRatio < 10) {
-                        missingAreas.push({
-                            x: rect.x,
-                            y: rect.y,
-                            width: rect.width,
-                            height: rect.height,
-                            area: area
-                        });
-                    }
-                }
-            }
-
-            // Fusionner les zones qui se chevauchent
-            missingAreas = mergeOverlapping(missingAreas);
-
-            // Créer l'image de différence colorée pour l'affichage
-            let diffColor = new cv.Mat();
-            cv.cvtColor(diff, diffColor, cv.COLOR_GRAY2RGBA);
-
-            // Nettoyer
-            refGray.delete(); curGray.delete();
-            refBlur.delete(); curBlur.delete();
-            diff.delete(); binary.delete();
-            kernel.delete(); cleaned.delete();
-            contours.delete(); hierarchy.delete();
-
-            return {
-                missingAreas: missingAreas,
-                diffMat: diffColor
-            };
-        }
-
-        function mergeOverlapping(rects) {
-            if (rects.length <= 1) return rects;
-
-            let merged = [];
-            let used = new Set();
-
-            for (let i = 0; i < rects.length; i++) {
-                if (used.has(i)) continue;
-
-                let current = {...rects[i]};
-
-                for (let j = i + 1; j < rects.length; j++) {
-                    if (used.has(j)) continue;
-
-                    let other = rects[j];
-
-                    // Vérifier chevauchement
-                    let overlapX = Math.max(0, Math.min(current.x + current.width, other.x + other.width) - Math.max(current.x, other.x));
-                    let overlapY = Math.max(0, Math.min(current.y + current.height, other.y + other.height) - Math.max(current.y, other.y));
-                    let overlapArea = overlapX * overlapY;
-                    let minArea = Math.min(current.width * current.height, other.width * other.height);
-
-                    if (overlapArea / minArea > 0.3) {
-                        // Fusionner
-                        let newX = Math.min(current.x, other.x);
-                        let newY = Math.min(current.y, other.y);
-                        current.width = Math.max(current.x + current.width, other.x + other.width) - newX;
-                        current.height = Math.max(current.y + current.height, other.y + other.height) - newY;
-                        current.x = newX;
-                        current.y = newY;
-                        used.add(j);
-                    }
-                }
-
-                merged.push(current);
-                used.add(i);
-            }
-
-            return merged;
-        }
-
-        function displayResults(result, refMat) {
-            const count = result.missingAreas.length;
-
-            // Mise à jour du résumé
-            els.missingCount.textContent = count;
+            // Résumé
+            els.missingCount.textContent = missingCount;
             els.summary.className = 'summary-card';
 
-            if (count === 0) {
+            if (missingCount === 0) {
                 els.summary.classList.add('success');
                 els.summaryIcon.textContent = '✅';
-            } else if (count <= 2) {
+            } else if (missingCount <= 2) {
                 els.summary.classList.add('warning');
                 els.summaryIcon.textContent = '⚠️';
             } else {
@@ -828,40 +825,54 @@
                 els.summaryIcon.textContent = '🚨';
             }
 
-            // Dessiner les résultats sur l'image
-            let resultMat = refMat.clone();
+            // Dessiner le résultat
+            els.resultCanvas.width = width;
+            els.resultCanvas.height = height;
+            const ctx = els.resultCanvas.getContext('2d');
+            ctx.drawImage(curImg, 0, 0, width, height);
 
-            for (let area of result.missingAreas) {
-                // Rectangle rouge
-                cv.rectangle(
-                    resultMat,
-                    new cv.Point(area.x, area.y),
-                    new cv.Point(area.x + area.width, area.y + area.height),
-                    [255, 0, 0, 255],
-                    3
+            // Dessiner les zones
+            results.forEach(r => {
+                const zone = r.zone;
+
+                if (r.isMissing) {
+                    // Zone manquante : rouge
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+                    ctx.lineWidth = 4;
+                } else {
+                    // Zone présente : vert
+                    ctx.strokeStyle = '#10b981';
+                    ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+                    ctx.lineWidth = 3;
+                }
+
+                ctx.fillRect(zone.x, zone.y, zone.width, zone.height);
+                ctx.strokeRect(zone.x, zone.y, zone.width, zone.height);
+
+                // Numéro et statut
+                ctx.fillStyle = r.isMissing ? '#ef4444' : '#10b981';
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillText(
+                    `${r.index} ${r.isMissing ? '✗' : '✓'}`,
+                    zone.x + 5,
+                    zone.y + 24
                 );
-            }
+            });
 
-            // Afficher sur les canvas
-            cv.imshow(els.resultCanvas, resultMat);
-            cv.imshow(els.diffCanvas, result.diffMat);
-
-            // Images de comparaison
-            els.compareRef.src = refImage;
-            els.compareCur.src = curImage;
-
-            // Afficher la section résultats
-            els.resultsSection.classList.add('visible');
-            els.resultsSection.scrollIntoView({ behavior: 'smooth' });
-
-            // Nettoyer
-            resultMat.delete();
-            result.diffMat.delete();
+            // Liste détaillée
+            els.zonesDetail.innerHTML = results.map(r => `
+                <div class="zone-item ${r.isMissing ? 'missing' : 'present'}">
+                    <span>Zone ${r.index}</span>
+                    <span class="zone-status ${r.isMissing ? 'missing' : 'present'}">
+                        ${r.isMissing ? '❌ Manquant' : '✅ Présent'}
+                    </span>
+                </div>
+            `).join('');
         }
 
         // Initialisation
-        setupDropZone(els.refDrop, els.refInput, els.refPreview, els.clearRef, true);
-        setupDropZone(els.curDrop, els.curInput, els.curPreview, els.clearCur, false);
+        goToStep(1);
     </script>
 </body>
 </html>
