@@ -261,22 +261,28 @@
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
-        .comparison-grid {
+        .result-comparison {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 20px;
         }
 
-        .comparison-item { text-align: center; }
-        .comparison-item span {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--text-light);
+        .result-item {
+            text-align: center;
         }
-        .comparison-item img {
+
+        .result-label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text);
+        }
+
+        .result-item canvas {
             width: 100%;
-            border-radius: 8px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
         /* Info box */
@@ -328,7 +334,7 @@
         @media (max-width: 768px) {
             header h1 { font-size: 1.6rem; }
             .upload-grid { grid-template-columns: 1fr; }
-            .comparison-grid { grid-template-columns: 1fr; }
+            .result-comparison { grid-template-columns: 1fr; }
             .btn { padding: 12px 20px; font-size: 1rem; width: 100%; }
             .options-grid { grid-template-columns: 1fr; }
         }
@@ -415,28 +421,14 @@
                     </div>
                 </div>
 
-                <div class="tabs">
-                    <button class="tab active" data-tab="result">Résultat</button>
-                    <button class="tab" data-tab="ref-tools">Outils détectés</button>
-                    <button class="tab" data-tab="compare">Comparaison</button>
-                </div>
-
-                <div class="tab-pane active" id="tab-result">
-                    <canvas id="resultCanvas" class="result-image"></canvas>
-                </div>
-                <div class="tab-pane" id="tab-ref-tools">
-                    <canvas id="refToolsCanvas" class="result-image"></canvas>
-                </div>
-                <div class="tab-pane" id="tab-compare">
-                    <div class="comparison-grid">
-                        <div class="comparison-item">
-                            <span>Référence</span>
-                            <img id="compareRef" alt="Référence">
-                        </div>
-                        <div class="comparison-item">
-                            <span>Actuelle</span>
-                            <img id="compareCur" alt="Actuelle">
-                        </div>
+                <div class="result-comparison">
+                    <div class="result-item">
+                        <span class="result-label">📸 Référence (outils détectés)</span>
+                        <canvas id="refToolsCanvas" class="result-image"></canvas>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">📷 Actuelle (outils manquants en rouge)</span>
+                        <canvas id="resultCanvas" class="result-image"></canvas>
                     </div>
                 </div>
             </section>
@@ -479,8 +471,6 @@
             totalTools: document.getElementById('totalTools'),
             resultCanvas: document.getElementById('resultCanvas'),
             refToolsCanvas: document.getElementById('refToolsCanvas'),
-            compareRef: document.getElementById('compareRef'),
-            compareCur: document.getElementById('compareCur'),
             loading: document.getElementById('loading'),
             loadingText: document.getElementById('loadingText')
         };
@@ -975,10 +965,6 @@
                 refCtx.font = 'bold 16px sans-serif';
                 refCtx.fillText(`${index + 1}`, box.x + 5, box.y + 18);
             });
-
-            // Comparaison
-            els.compareRef.src = refImage;
-            els.compareCur.src = curImage;
 
             // Afficher
             els.resultsSection.classList.add('visible');
