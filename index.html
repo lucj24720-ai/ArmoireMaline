@@ -225,8 +225,9 @@
         .summary-card.danger { background: rgba(239, 68, 68, 0.1); border: 2px solid var(--danger); }
 
         .summary-icon { font-size: 3rem; }
-        .missing-count { font-size: 2.5rem; font-weight: 700; }
-        .missing-label { color: var(--text-light); display: block; }
+        .summary-count { text-align: center; }
+        .missing-count { font-size: 2.5rem; font-weight: 700; display: block; }
+        .missing-label { color: var(--text-light); }
 
         /* Tabs */
         .tabs {
@@ -235,6 +236,7 @@
             margin-bottom: 16px;
             border-bottom: 2px solid var(--border);
             padding-bottom: 8px;
+            flex-wrap: wrap;
         }
 
         .tab {
@@ -276,6 +278,18 @@
             width: 100%;
             border-radius: 8px;
         }
+
+        /* Info box */
+        .info-box {
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+
+        .info-box strong { color: var(--primary); }
 
         /* Loading */
         .loading {
@@ -330,6 +344,11 @@
         <main>
             <!-- Upload Section -->
             <div class="card">
+                <div class="info-box">
+                    <strong>Comment ça marche :</strong> L'application détecte les outils sur la photo de référence,
+                    puis vérifie s'ils sont toujours présents sur la photo actuelle.
+                </div>
+
                 <div class="upload-grid">
                     <!-- Référence -->
                     <div>
@@ -363,7 +382,7 @@
                 </div>
 
                 <!-- Options -->
-                <details class="options-section">
+                <details class="options-section" open>
                     <summary>⚙️ Options de détection</summary>
                     <div class="options-grid">
                         <div class="option-group">
@@ -371,7 +390,7 @@
                             <input type="range" id="sensitivity" min="1" max="5" value="3">
                         </div>
                         <div class="option-group">
-                            <label>Taille minimum : <span class="option-value" id="minSizeVal">Moyenne</span></label>
+                            <label>Taille min des outils : <span class="option-value" id="minSizeVal">Moyenne</span></label>
                             <input type="range" id="minSize" min="1" max="5" value="3">
                         </div>
                     </div>
@@ -390,23 +409,23 @@
 
                 <div class="summary-card" id="summary">
                     <div class="summary-icon" id="summaryIcon">✅</div>
-                    <div>
+                    <div class="summary-count">
                         <span class="missing-count" id="missingCount">0</span>
-                        <span class="missing-label">outil(s) manquant(s) détecté(s)</span>
+                        <span class="missing-label">outil(s) manquant(s) sur <span id="totalTools">0</span> détecté(s)</span>
                     </div>
                 </div>
 
                 <div class="tabs">
                     <button class="tab active" data-tab="result">Résultat</button>
-                    <button class="tab" data-tab="diff">Différences</button>
+                    <button class="tab" data-tab="ref-tools">Outils détectés</button>
                     <button class="tab" data-tab="compare">Comparaison</button>
                 </div>
 
                 <div class="tab-pane active" id="tab-result">
                     <canvas id="resultCanvas" class="result-image"></canvas>
                 </div>
-                <div class="tab-pane" id="tab-diff">
-                    <canvas id="diffCanvas" class="result-image"></canvas>
+                <div class="tab-pane" id="tab-ref-tools">
+                    <canvas id="refToolsCanvas" class="result-image"></canvas>
                 </div>
                 <div class="tab-pane" id="tab-compare">
                     <div class="comparison-grid">
@@ -424,13 +443,13 @@
         </main>
 
         <footer>
-            <p>ArmoireMaline v2.0 - Détection intelligente d'outils manquants</p>
+            <p>ArmoireMaline v3.0 - Détection intelligente d'outils manquants</p>
         </footer>
     </div>
 
     <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p>Analyse en cours...</p>
+        <p id="loadingText">Analyse en cours...</p>
     </div>
 
     <script>
@@ -457,11 +476,13 @@
             summary: document.getElementById('summary'),
             summaryIcon: document.getElementById('summaryIcon'),
             missingCount: document.getElementById('missingCount'),
+            totalTools: document.getElementById('totalTools'),
             resultCanvas: document.getElementById('resultCanvas'),
-            diffCanvas: document.getElementById('diffCanvas'),
+            refToolsCanvas: document.getElementById('refToolsCanvas'),
             compareRef: document.getElementById('compareRef'),
             compareCur: document.getElementById('compareCur'),
-            loading: document.getElementById('loading')
+            loading: document.getElementById('loading'),
+            loadingText: document.getElementById('loadingText')
         };
 
         // Setup drop zones
@@ -542,29 +563,21 @@
 
         async function analyze() {
             els.loading.classList.add('visible');
-            await new Promise(r => setTimeout(r, 50));
+            els.loadingText.textContent = 'Chargement des images...';
+            await sleep(50);
 
             try {
-                const sensitivity = parseInt(els.sensitivity.value);
+                const sensitivityLevel = parseInt(els.sensitivity.value);
                 const minSizeLevel = parseInt(els.minSize.value);
-
-                // Paramètres basés sur les sliders
-                // Sensibilité: seuil de différence (plus haut = moins sensible)
-                const thresholds = [20, 30, 40, 55, 70];
-                const threshold = thresholds[sensitivity - 1];
-
-                // Taille minimum en pixels² (plus l'outil est gros, plus la valeur est haute)
-                const minAreas = [1000, 2500, 5000, 10000, 20000];
-                const minArea = minAreas[minSizeLevel - 1];
 
                 // Charger les images
                 const refImg = await loadImageAsync(refImage);
                 const curImg = await loadImageAsync(curImage);
 
-                // Créer les canvas
                 const width = refImg.width;
                 const height = refImg.height;
 
+                // Créer les canvas
                 const refCanvas = createCanvas(width, height);
                 const curCanvas = createCanvas(width, height);
 
@@ -574,24 +587,37 @@
                 refCtx.drawImage(refImg, 0, 0);
                 curCtx.drawImage(curImg, 0, 0, width, height);
 
-                // Obtenir les données des pixels
                 const refData = refCtx.getImageData(0, 0, width, height);
                 const curData = curCtx.getImageData(0, 0, width, height);
 
-                // Créer le masque de différence
-                const diffMask = createDiffMask(refData, curData, width, height, threshold);
+                // ÉTAPE 1: Détecter le fond (panneau perforé bleu)
+                els.loadingText.textContent = 'Détection du fond...';
+                await sleep(50);
+                const backgroundMask = detectBackground(refData, width, height);
 
-                // Nettoyer le masque (morphologie)
-                const cleanedMask = cleanMask(diffMask, width, height, minSizeLevel);
+                // ÉTAPE 2: Détecter les outils sur l'image de référence (tout ce qui n'est pas le fond)
+                els.loadingText.textContent = 'Détection des outils...';
+                await sleep(50);
+                const toolsMask = detectTools(refData, backgroundMask, width, height);
 
-                // Trouver les zones connexes (outils manquants)
-                const regions = findRegions(cleanedMask, width, height, minArea);
+                // ÉTAPE 3: Nettoyer et trouver les régions d'outils
+                const minAreas = [500, 1000, 2000, 4000, 8000];
+                const minArea = minAreas[minSizeLevel - 1];
 
-                // Filtrer les régions qui ressemblent à des outils (pas des trous)
-                const toolRegions = filterToolRegions(regions, width, height);
+                const cleanedMask = cleanToolsMask(toolsMask, width, height, minSizeLevel);
+                const toolRegions = findToolRegions(cleanedMask, width, height, minArea);
+
+                // ÉTAPE 4: Vérifier quels outils sont manquants
+                els.loadingText.textContent = 'Vérification des outils manquants...';
+                await sleep(50);
+
+                const thresholds = [15, 25, 35, 50, 65];
+                const threshold = thresholds[sensitivityLevel - 1];
+
+                const results = checkMissingTools(toolRegions, refData, curData, width, height, threshold);
 
                 // Afficher les résultats
-                displayResults(toolRegions, refImg, curImg, width, height, cleanedMask);
+                displayResults(results, refImg, curImg, width, height, toolRegions);
 
             } catch (error) {
                 console.error('Erreur:', error);
@@ -599,6 +625,10 @@
             }
 
             els.loading.classList.remove('visible');
+        }
+
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
         }
 
         function loadImageAsync(src) {
@@ -617,61 +647,101 @@
             return canvas;
         }
 
-        function createDiffMask(refData, curData, width, height, threshold) {
+        // Détecter le fond (panneau bleu perforé)
+        function detectBackground(imageData, width, height) {
+            const data = imageData.data;
             const mask = new Uint8Array(width * height);
-            const refPx = refData.data;
-            const curPx = curData.data;
+
+            // Analyser les couleurs pour trouver la couleur dominante du fond
+            const colorCounts = {};
 
             for (let i = 0; i < width * height; i++) {
                 const idx = i * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
 
-                // Convertir en niveaux de gris
-                const refGray = (refPx[idx] * 0.299 + refPx[idx+1] * 0.587 + refPx[idx+2] * 0.114);
-                const curGray = (curPx[idx] * 0.299 + curPx[idx+1] * 0.587 + curPx[idx+2] * 0.114);
+                // Quantifier la couleur (réduire à 32 niveaux par canal)
+                const qr = Math.floor(r / 8) * 8;
+                const qg = Math.floor(g / 8) * 8;
+                const qb = Math.floor(b / 8) * 8;
+                const key = `${qr},${qg},${qb}`;
 
-                // Différence
-                const diff = Math.abs(refGray - curGray);
+                colorCounts[key] = (colorCounts[key] || 0) + 1;
+            }
 
-                // Aussi vérifier la différence de couleur
-                const rDiff = Math.abs(refPx[idx] - curPx[idx]);
-                const gDiff = Math.abs(refPx[idx+1] - curPx[idx+1]);
-                const bDiff = Math.abs(refPx[idx+2] - curPx[idx+2]);
-                const colorDiff = Math.max(rDiff, gDiff, bDiff);
+            // Trouver les couleurs les plus fréquentes (probablement le fond)
+            const sortedColors = Object.entries(colorCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5); // Top 5 couleurs
 
-                // Combiner les deux critères
-                if (diff > threshold || colorDiff > threshold * 1.2) {
-                    mask[i] = 255;
+            // Extraire les couleurs de fond
+            const bgColors = sortedColors.map(([key]) => {
+                const [r, g, b] = key.split(',').map(Number);
+                return { r, g, b };
+            });
+
+            // Marquer les pixels qui sont proches des couleurs de fond
+            for (let i = 0; i < width * height; i++) {
+                const idx = i * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+
+                let isBackground = false;
+                for (const bg of bgColors) {
+                    const dist = Math.abs(r - bg.r) + Math.abs(g - bg.g) + Math.abs(b - bg.b);
+                    if (dist < 60) { // Tolérance de couleur
+                        isBackground = true;
+                        break;
+                    }
                 }
+
+                mask[i] = isBackground ? 255 : 0;
             }
 
             return mask;
         }
 
-        function cleanMask(mask, width, height, sizeLevel) {
-            let result = new Uint8Array(mask);
+        // Détecter les outils (pixels qui ne sont pas le fond)
+        function detectTools(imageData, backgroundMask, width, height) {
+            const mask = new Uint8Array(width * height);
 
-            // Taille du kernel basée sur le niveau
-            const kernelSizes = [3, 5, 7, 9, 11];
+            for (let i = 0; i < width * height; i++) {
+                // Un outil = pas le fond
+                mask[i] = backgroundMask[i] === 0 ? 255 : 0;
+            }
+
+            return mask;
+        }
+
+        // Nettoyer le masque des outils
+        function cleanToolsMask(mask, width, height, sizeLevel) {
+            // Taille du kernel pour l'érosion/dilatation
+            const kernelSizes = [2, 3, 4, 5, 6];
             const kernelSize = kernelSizes[sizeLevel - 1];
-            const half = Math.floor(kernelSize / 2);
+            const half = kernelSize;
 
-            // Érosion (supprime les petits points = trous du panneau)
+            // Érosion forte pour supprimer le bruit et les petits éléments
             let eroded = new Uint8Array(width * height);
             for (let y = half; y < height - half; y++) {
                 for (let x = half; x < width - half; x++) {
-                    let allWhite = true;
-                    for (let ky = -half; ky <= half && allWhite; ky++) {
-                        for (let kx = -half; kx <= half && allWhite; kx++) {
-                            if (result[(y + ky) * width + (x + kx)] === 0) {
-                                allWhite = false;
+                    let count = 0;
+                    let total = 0;
+                    for (let ky = -half; ky <= half; ky++) {
+                        for (let kx = -half; kx <= half; kx++) {
+                            total++;
+                            if (mask[(y + ky) * width + (x + kx)] === 255) {
+                                count++;
                             }
                         }
                     }
-                    eroded[y * width + x] = allWhite ? 255 : 0;
+                    // Au moins 70% des pixels doivent être blancs
+                    eroded[y * width + x] = (count / total > 0.7) ? 255 : 0;
                 }
             }
 
-            // Dilatation (restaure les zones restantes)
+            // Dilatation pour restaurer la taille
             let dilated = new Uint8Array(width * height);
             for (let y = half; y < height - half; y++) {
                 for (let x = half; x < width - half; x++) {
@@ -687,8 +757,8 @@
                 }
             }
 
-            // Deuxième dilatation pour agrandir les zones détectées
-            result = new Uint8Array(width * height);
+            // Deuxième dilatation
+            let result = new Uint8Array(width * height);
             for (let y = half; y < height - half; y++) {
                 for (let x = half; x < width - half; x++) {
                     let anyWhite = false;
@@ -706,7 +776,8 @@
             return result;
         }
 
-        function findRegions(mask, width, height, minArea) {
+        // Trouver les régions d'outils
+        function findToolRegions(mask, width, height, minArea) {
             const visited = new Uint8Array(width * height);
             const regions = [];
 
@@ -714,56 +785,18 @@
                 for (let x = 0; x < width; x++) {
                     const idx = y * width + x;
                     if (mask[idx] === 255 && !visited[idx]) {
-                        // BFS pour trouver la région connectée
-                        const region = {
-                            pixels: [],
-                            minX: x, maxX: x,
-                            minY: y, maxY: y
-                        };
+                        const region = floodFill(mask, visited, x, y, width, height);
 
-                        const queue = [{x, y}];
-                        visited[idx] = 1;
-
-                        while (queue.length > 0) {
-                            const p = queue.shift();
-                            region.pixels.push(p);
-                            region.minX = Math.min(region.minX, p.x);
-                            region.maxX = Math.max(region.maxX, p.x);
-                            region.minY = Math.min(region.minY, p.y);
-                            region.maxY = Math.max(region.maxY, p.y);
-
-                            // Voisins 4-connectés
-                            const neighbors = [
-                                {x: p.x - 1, y: p.y},
-                                {x: p.x + 1, y: p.y},
-                                {x: p.x, y: p.y - 1},
-                                {x: p.x, y: p.y + 1}
-                            ];
-
-                            for (const n of neighbors) {
-                                if (n.x >= 0 && n.x < width && n.y >= 0 && n.y < height) {
-                                    const nIdx = n.y * width + n.x;
-                                    if (mask[nIdx] === 255 && !visited[nIdx]) {
-                                        visited[nIdx] = 1;
-                                        queue.push(n);
-                                    }
-                                }
-                            }
-                        }
-
-                        region.area = region.pixels.length;
-                        region.width = region.maxX - region.minX + 1;
-                        region.height = region.maxY - region.minY + 1;
-                        region.boundingBox = {
-                            x: region.minX,
-                            y: region.minY,
-                            width: region.width,
-                            height: region.height
-                        };
-
-                        // Filtrer par taille minimum
                         if (region.area >= minArea) {
-                            regions.push(region);
+                            // Calculer des propriétés supplémentaires
+                            const box = region.boundingBox;
+                            const aspectRatio = Math.max(box.width, box.height) / (Math.min(box.width, box.height) + 1);
+                            const fillRatio = region.area / (box.width * box.height);
+
+                            // Filtrer les régions qui ressemblent à des outils
+                            if (aspectRatio < 25 && fillRatio > 0.1 && box.width > 15 && box.height > 15) {
+                                regions.push(region);
+                            }
                         }
                     }
                 }
@@ -772,48 +805,113 @@
             return regions;
         }
 
-        function filterToolRegions(regions, imgWidth, imgHeight) {
-            return regions.filter(region => {
-                const box = region.boundingBox;
+        function floodFill(mask, visited, startX, startY, width, height) {
+            const region = {
+                pixels: [],
+                minX: startX, maxX: startX,
+                minY: startY, maxY: startY,
+                area: 0
+            };
 
-                // Ratio de la boîte englobante (évite les formes trop allongées ou trop carrées/petites)
-                const aspectRatio = Math.max(box.width, box.height) / (Math.min(box.width, box.height) + 1);
+            const queue = [{x: startX, y: startY}];
+            visited[startY * width + startX] = 1;
 
-                // Les outils ont généralement un ratio entre 1 et 15
-                if (aspectRatio > 20) return false;
+            while (queue.length > 0) {
+                const p = queue.shift();
+                region.pixels.push(p);
+                region.minX = Math.min(region.minX, p.x);
+                region.maxX = Math.max(region.maxX, p.x);
+                region.minY = Math.min(region.minY, p.y);
+                region.maxY = Math.max(region.maxY, p.y);
 
-                // Ratio de remplissage (aire / boîte englobante)
-                const fillRatio = region.area / (box.width * box.height);
+                const neighbors = [
+                    {x: p.x - 1, y: p.y},
+                    {x: p.x + 1, y: p.y},
+                    {x: p.x, y: p.y - 1},
+                    {x: p.x, y: p.y + 1}
+                ];
 
-                // Les trous du panneau ont souvent un faible ratio de remplissage après érosion
-                // Les outils ont généralement un ratio > 0.2
-                if (fillRatio < 0.15) return false;
+                for (const n of neighbors) {
+                    if (n.x >= 0 && n.x < width && n.y >= 0 && n.y < height) {
+                        const nIdx = n.y * width + n.x;
+                        if (mask[nIdx] === 255 && !visited[nIdx]) {
+                            visited[nIdx] = 1;
+                            queue.push(n);
+                        }
+                    }
+                }
+            }
 
-                // Taille minimum relative à l'image
-                const relativeArea = region.area / (imgWidth * imgHeight);
-                if (relativeArea < 0.0005) return false; // Moins de 0.05% de l'image
+            region.area = region.pixels.length;
+            region.boundingBox = {
+                x: region.minX,
+                y: region.minY,
+                width: region.maxX - region.minX + 1,
+                height: region.maxY - region.minY + 1
+            };
 
-                // Taille maximum (évite de détecter tout le fond)
-                if (relativeArea > 0.3) return false; // Plus de 30% de l'image
-
-                // Dimensions minimum absolues
-                if (box.width < 20 || box.height < 20) return false;
-
-                return true;
-            });
+            return region;
         }
 
-        function displayResults(regions, refImg, curImg, width, height, mask) {
-            const count = regions.length;
+        // Vérifier quels outils sont manquants
+        function checkMissingTools(toolRegions, refData, curData, width, height, threshold) {
+            const refPx = refData.data;
+            const curPx = curData.data;
+            const results = [];
+
+            for (const region of toolRegions) {
+                let totalDiff = 0;
+                let sampleCount = 0;
+
+                // Échantillonner les pixels de la région
+                for (const p of region.pixels) {
+                    // Échantillonner 1 pixel sur 3 pour la performance
+                    if (Math.random() > 0.33) continue;
+
+                    const idx = (p.y * width + p.x) * 4;
+
+                    const refR = refPx[idx];
+                    const refG = refPx[idx + 1];
+                    const refB = refPx[idx + 2];
+
+                    const curR = curPx[idx];
+                    const curG = curPx[idx + 1];
+                    const curB = curPx[idx + 2];
+
+                    // Différence de couleur
+                    const diff = (Math.abs(refR - curR) + Math.abs(refG - curG) + Math.abs(refB - curB)) / 3;
+                    totalDiff += diff;
+                    sampleCount++;
+                }
+
+                const avgDiff = sampleCount > 0 ? totalDiff / sampleCount : 0;
+                const isMissing = avgDiff > threshold;
+
+                results.push({
+                    region: region,
+                    avgDiff: avgDiff,
+                    isMissing: isMissing
+                });
+            }
+
+            return results;
+        }
+
+        // Afficher les résultats
+        function displayResults(results, refImg, curImg, width, height, toolRegions) {
+            const missingTools = results.filter(r => r.isMissing);
+            const missingCount = missingTools.length;
+            const totalTools = results.length;
 
             // Résumé
-            els.missingCount.textContent = count;
+            els.missingCount.textContent = missingCount;
+            els.totalTools.textContent = totalTools;
             els.summary.className = 'summary-card';
 
-            if (count === 0) {
+            if (missingCount === 0) {
                 els.summary.classList.add('success');
                 els.summaryIcon.textContent = '✅';
-            } else if (count <= 3) {
+            } else if (missingCount <= 3) {
                 els.summary.classList.add('warning');
                 els.summaryIcon.textContent = '⚠️';
             } else {
@@ -821,52 +919,62 @@
                 els.summaryIcon.textContent = '🚨';
             }
 
-            // Image résultat
+            // Image résultat (photo actuelle avec outils manquants entourés)
             els.resultCanvas.width = width;
             els.resultCanvas.height = height;
             const ctx = els.resultCanvas.getContext('2d');
-            ctx.drawImage(refImg, 0, 0);
+            ctx.drawImage(curImg, 0, 0, width, height);
 
-            // Dessiner les zones manquantes
-            regions.forEach((region, index) => {
-                const box = region.boundingBox;
+            // Dessiner les outils manquants en rouge
+            let missingIndex = 0;
+            for (const result of results) {
+                if (result.isMissing) {
+                    missingIndex++;
+                    const box = result.region.boundingBox;
 
-                // Fond semi-transparent rouge
-                ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
-                ctx.fillRect(box.x, box.y, box.width, box.height);
+                    // Fond semi-transparent rouge
+                    ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+                    ctx.fillRect(box.x, box.y, box.width, box.height);
 
-                // Bordure rouge
-                ctx.strokeStyle = '#ef4444';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(box.x, box.y, box.width, box.height);
+                    // Bordure rouge épaisse
+                    ctx.strokeStyle = '#dc2626';
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(box.x, box.y, box.width, box.height);
 
-                // Numéro
-                ctx.fillStyle = '#ef4444';
-                ctx.font = 'bold 18px sans-serif';
-                ctx.fillText(`${index + 1}`, box.x + 5, box.y + 22);
-            });
-
-            // Image de différence
-            els.diffCanvas.width = width;
-            els.diffCanvas.height = height;
-            const diffCtx = els.diffCanvas.getContext('2d');
-            const diffImageData = diffCtx.createImageData(width, height);
-
-            for (let i = 0; i < mask.length; i++) {
-                const idx = i * 4;
-                if (mask[i] === 255) {
-                    diffImageData.data[idx] = 255;     // R
-                    diffImageData.data[idx + 1] = 100; // G
-                    diffImageData.data[idx + 2] = 100; // B
-                    diffImageData.data[idx + 3] = 255; // A
-                } else {
-                    diffImageData.data[idx] = 50;
-                    diffImageData.data[idx + 1] = 50;
-                    diffImageData.data[idx + 2] = 50;
-                    diffImageData.data[idx + 3] = 255;
+                    // Numéro
+                    ctx.fillStyle = '#dc2626';
+                    ctx.font = 'bold 24px sans-serif';
+                    ctx.fillText(`${missingIndex}`, box.x + 8, box.y + 28);
                 }
             }
-            diffCtx.putImageData(diffImageData, 0, 0);
+
+            // Image avec tous les outils détectés sur la référence
+            els.refToolsCanvas.width = width;
+            els.refToolsCanvas.height = height;
+            const refCtx = els.refToolsCanvas.getContext('2d');
+            refCtx.drawImage(refImg, 0, 0);
+
+            // Dessiner tous les outils détectés
+            results.forEach((result, index) => {
+                const box = result.region.boundingBox;
+
+                if (result.isMissing) {
+                    refCtx.strokeStyle = '#dc2626'; // Rouge pour manquant
+                    refCtx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+                } else {
+                    refCtx.strokeStyle = '#16a34a'; // Vert pour présent
+                    refCtx.fillStyle = 'rgba(22, 163, 74, 0.2)';
+                }
+
+                refCtx.lineWidth = 3;
+                refCtx.fillRect(box.x, box.y, box.width, box.height);
+                refCtx.strokeRect(box.x, box.y, box.width, box.height);
+
+                // Numéro
+                refCtx.fillStyle = result.isMissing ? '#dc2626' : '#16a34a';
+                refCtx.font = 'bold 16px sans-serif';
+                refCtx.fillText(`${index + 1}`, box.x + 5, box.y + 18);
+            });
 
             // Comparaison
             els.compareRef.src = refImage;
