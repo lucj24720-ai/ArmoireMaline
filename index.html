@@ -583,7 +583,7 @@
                 // ÉTAPE 1: Détecter le fond (panneau perforé bleu)
                 els.loadingText.textContent = 'Détection du fond...';
                 await sleep(50);
-                const backgroundMask = detectBackground(refData, width, height);
+                const { mask: backgroundMask, bgColors } = detectBackground(refData, width, height);
 
                 // ÉTAPE 2: Détecter les outils sur l'image de référence (tout ce qui n'est pas le fond)
                 els.loadingText.textContent = 'Détection des outils...';
@@ -591,7 +591,7 @@
                 const toolsMask = detectTools(refData, backgroundMask, width, height);
 
                 // ÉTAPE 3: Nettoyer et trouver les régions d'outils
-                const minAreas = [500, 1000, 2000, 4000, 8000];
+                const minAreas = [300, 600, 1200, 2500, 5000]; // Valeurs réduites pour détecter plus d'outils
                 const minArea = minAreas[minSizeLevel - 1];
 
                 const cleanedMask = cleanToolsMask(toolsMask, width, height, minSizeLevel);
@@ -601,10 +601,10 @@
                 els.loadingText.textContent = 'Vérification des outils manquants...';
                 await sleep(50);
 
-                const thresholds = [15, 25, 35, 50, 65];
+                const thresholds = [10, 18, 28, 40, 55]; // Seuils plus bas pour être plus sensible
                 const threshold = thresholds[sensitivityLevel - 1];
 
-                const results = checkMissingTools(toolRegions, refData, curData, width, height, threshold);
+                const results = checkMissingTools(toolRegions, refData, curData, width, height, threshold, bgColors);
 
                 // Afficher les résultats
                 displayResults(results, refImg, curImg, width, height, toolRegions);
@@ -663,7 +663,7 @@
             // Trouver les couleurs les plus fréquentes (probablement le fond)
             const sortedColors = Object.entries(colorCounts)
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 5); // Top 5 couleurs
+                .slice(0, 8); // Top 8 couleurs pour mieux capturer le fond
 
             // Extraire les couleurs de fond
             const bgColors = sortedColors.map(([key]) => {
@@ -681,7 +681,7 @@
                 let isBackground = false;
                 for (const bg of bgColors) {
                     const dist = Math.abs(r - bg.r) + Math.abs(g - bg.g) + Math.abs(b - bg.b);
-                    if (dist < 60) { // Tolérance de couleur
+                    if (dist < 50) { // Tolérance de couleur plus stricte
                         isBackground = true;
                         break;
                     }
@@ -690,7 +690,7 @@
                 mask[i] = isBackground ? 255 : 0;
             }
 
-            return mask;
+            return { mask, bgColors };
         }
 
         // Détecter les outils (pixels qui ne sont pas le fond)
@@ -771,21 +771,33 @@
             const visited = new Uint8Array(width * height);
             const regions = [];
 
+            // Calculer la taille minimale pour exclure les trous du panneau
+            // Les trous sont généralement petits et circulaires
+            const minDimension = 25; // Taille minimale pour un outil
+            const maxHoleArea = 1500; // Les trous sont plus petits que ça
+
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
                     const idx = y * width + x;
                     if (mask[idx] === 255 && !visited[idx]) {
                         const region = floodFill(mask, visited, x, y, width, height);
+                        const box = region.boundingBox;
 
-                        if (region.area >= minArea) {
-                            // Calculer des propriétés supplémentaires
-                            const box = region.boundingBox;
-                            const aspectRatio = Math.max(box.width, box.height) / (Math.min(box.width, box.height) + 1);
-                            const fillRatio = region.area / (box.width * box.height);
+                        // Filtrer les petits trous du panneau perforé
+                        // Les trous sont généralement circulaires (ratio proche de 1) et petits
+                        const aspectRatio = Math.max(box.width, box.height) / (Math.min(box.width, box.height) + 1);
+                        const fillRatio = region.area / (box.width * box.height);
+                        const isCircular = aspectRatio < 1.8 && fillRatio > 0.5;
+                        const isSmallHole = region.area < maxHoleArea && isCircular;
 
-                            // Filtrer les régions qui ressemblent à des outils
-                            if (aspectRatio < 25 && fillRatio > 0.1 && box.width > 15 && box.height > 15) {
-                                regions.push(region);
+                        // Un outil doit être assez grand et pas un petit trou circulaire
+                        if (region.area >= minArea && !isSmallHole) {
+                            // Vérifier que c'est bien un outil (pas trop petit)
+                            if (box.width >= minDimension || box.height >= minDimension) {
+                                // Filtrer les formes trop fines ou étranges
+                                if (aspectRatio < 20 && fillRatio > 0.08) {
+                                    regions.push(region);
+                                }
                             }
                         }
                     }
@@ -844,7 +856,7 @@
         }
 
         // Vérifier quels outils sont manquants
-        function checkMissingTools(toolRegions, refData, curData, width, height, threshold) {
+        function checkMissingTools(toolRegions, refData, curData, width, height, threshold, bgColors) {
             const refPx = refData.data;
             const curPx = curData.data;
             const results = [];
@@ -852,11 +864,13 @@
             for (const region of toolRegions) {
                 let totalDiff = 0;
                 let sampleCount = 0;
+                let pixelsMatchingBg = 0; // Pixels de l'image actuelle qui ressemblent au fond
 
                 // Échantillonner les pixels de la région
+                const sampleRate = Math.min(1, 500 / region.pixels.length); // Au moins 500 échantillons
+
                 for (const p of region.pixels) {
-                    // Échantillonner 1 pixel sur 3 pour la performance
-                    if (Math.random() > 0.33) continue;
+                    if (Math.random() > sampleRate) continue;
 
                     const idx = (p.y * width + p.x) * 4;
 
@@ -868,18 +882,33 @@
                     const curG = curPx[idx + 1];
                     const curB = curPx[idx + 2];
 
-                    // Différence de couleur
+                    // Différence de couleur entre ref et current
                     const diff = (Math.abs(refR - curR) + Math.abs(refG - curG) + Math.abs(refB - curB)) / 3;
                     totalDiff += diff;
                     sampleCount++;
+
+                    // Vérifier si le pixel actuel ressemble au fond (outil enlevé = on voit le fond)
+                    for (const bg of bgColors) {
+                        const distToBg = Math.abs(curR - bg.r) + Math.abs(curG - bg.g) + Math.abs(curB - bg.b);
+                        if (distToBg < 80) {
+                            pixelsMatchingBg++;
+                            break;
+                        }
+                    }
                 }
 
                 const avgDiff = sampleCount > 0 ? totalDiff / sampleCount : 0;
-                const isMissing = avgDiff > threshold;
+                const bgRatio = sampleCount > 0 ? pixelsMatchingBg / sampleCount : 0;
+
+                // Un outil est manquant si :
+                // - Il y a une différence significative ET
+                // - Une partie des pixels actuels ressemblent au fond (l'outil a été enlevé, on voit le panneau)
+                const isMissing = avgDiff > threshold && bgRatio > 0.15;
 
                 results.push({
                     region: region,
                     avgDiff: avgDiff,
+                    bgRatio: bgRatio,
                     isMissing: isMissing
                 });
             }
