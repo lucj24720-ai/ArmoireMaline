@@ -637,58 +637,43 @@
             return canvas;
         }
 
-        // Détecter le fond (panneau bleu perforé)
+        // Détecter le fond et les éléments neutres (gris/blanc/beige)
         function detectBackground(imageData, width, height) {
             const data = imageData.data;
             const mask = new Uint8Array(width * height);
+            const bgColors = [];
 
-            // Analyser les couleurs pour trouver la couleur dominante du fond
-            const colorCounts = {};
-
+            // Marquer comme fond : gris, blanc, beige, et couleurs peu saturées
             for (let i = 0; i < width * height; i++) {
                 const idx = i * 4;
                 const r = data[idx];
                 const g = data[idx + 1];
                 const b = data[idx + 2];
 
-                // Quantifier la couleur (réduire à 32 niveaux par canal)
-                const qr = Math.floor(r / 8) * 8;
-                const qg = Math.floor(g / 8) * 8;
-                const qb = Math.floor(b / 8) * 8;
-                const key = `${qr},${qg},${qb}`;
+                // Calculer la saturation (différence entre max et min des canaux)
+                const maxC = Math.max(r, g, b);
+                const minC = Math.min(r, g, b);
+                const saturation = maxC - minC;
 
-                colorCounts[key] = (colorCounts[key] || 0) + 1;
+                // Luminosité moyenne
+                const brightness = (r + g + b) / 3;
+
+                // Un pixel est considéré comme "fond/structure" si :
+                // - Faible saturation (gris, blanc, beige) = pas un outil coloré
+                // - OU très clair (blanc, reflets)
+                // - OU très sombre (ombres)
+                const isNeutral = saturation < 40; // Peu de couleur
+                const isVeryBright = brightness > 220;
+                const isVeryDark = brightness < 30;
+
+                mask[i] = (isNeutral || isVeryBright || isVeryDark) ? 255 : 0;
             }
 
-            // Trouver les couleurs les plus fréquentes (probablement le fond)
-            const sortedColors = Object.entries(colorCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 8); // Top 8 couleurs pour mieux capturer le fond
-
-            // Extraire les couleurs de fond
-            const bgColors = sortedColors.map(([key]) => {
-                const [r, g, b] = key.split(',').map(Number);
-                return { r, g, b };
-            });
-
-            // Marquer les pixels qui sont proches des couleurs de fond
-            for (let i = 0; i < width * height; i++) {
-                const idx = i * 4;
-                const r = data[idx];
-                const g = data[idx + 1];
-                const b = data[idx + 2];
-
-                let isBackground = false;
-                for (const bg of bgColors) {
-                    const dist = Math.abs(r - bg.r) + Math.abs(g - bg.g) + Math.abs(b - bg.b);
-                    if (dist < 50) { // Tolérance de couleur plus stricte
-                        isBackground = true;
-                        break;
-                    }
-                }
-
-                mask[i] = isBackground ? 255 : 0;
-            }
+            // Collecter quelques couleurs de fond typiques pour la comparaison
+            bgColors.push({ r: 180, g: 180, b: 180 }); // Gris clair
+            bgColors.push({ r: 150, g: 150, b: 150 }); // Gris moyen
+            bgColors.push({ r: 200, g: 200, b: 200 }); // Gris très clair
+            bgColors.push({ r: 220, g: 220, b: 220 }); // Presque blanc
 
             return { mask, bgColors };
         }
@@ -864,10 +849,11 @@
             for (const region of toolRegions) {
                 let totalDiff = 0;
                 let sampleCount = 0;
-                let pixelsMatchingBg = 0; // Pixels de l'image actuelle qui ressemblent au fond
+                let refColoredPixels = 0; // Pixels colorés dans la référence
+                let curNeutralPixels = 0; // Pixels neutres (gris) dans l'actuelle
 
                 // Échantillonner les pixels de la région
-                const sampleRate = Math.min(1, 500 / region.pixels.length); // Au moins 500 échantillons
+                const sampleRate = Math.min(1, 800 / region.pixels.length);
 
                 for (const p of region.pixels) {
                     if (Math.random() > sampleRate) continue;
@@ -887,28 +873,34 @@
                     totalDiff += diff;
                     sampleCount++;
 
-                    // Vérifier si le pixel actuel ressemble au fond (outil enlevé = on voit le fond)
-                    for (const bg of bgColors) {
-                        const distToBg = Math.abs(curR - bg.r) + Math.abs(curG - bg.g) + Math.abs(curB - bg.b);
-                        if (distToBg < 80) {
-                            pixelsMatchingBg++;
-                            break;
-                        }
-                    }
+                    // Saturation du pixel de référence (est-ce coloré ?)
+                    const refSat = Math.max(refR, refG, refB) - Math.min(refR, refG, refB);
+                    if (refSat > 30) refColoredPixels++;
+
+                    // Saturation du pixel actuel (est-ce devenu neutre/gris ?)
+                    const curSat = Math.max(curR, curG, curB) - Math.min(curR, curG, curB);
+                    if (curSat < 40) curNeutralPixels++;
                 }
 
                 const avgDiff = sampleCount > 0 ? totalDiff / sampleCount : 0;
-                const bgRatio = sampleCount > 0 ? pixelsMatchingBg / sampleCount : 0;
+                const coloredRatio = sampleCount > 0 ? refColoredPixels / sampleCount : 0;
+                const neutralRatio = sampleCount > 0 ? curNeutralPixels / sampleCount : 0;
 
                 // Un outil est manquant si :
-                // - Il y a une différence significative ET
-                // - Une partie des pixels actuels ressemblent au fond (l'outil a été enlevé, on voit le panneau)
-                const isMissing = avgDiff > threshold && bgRatio > 0.15;
+                // - L'outil était coloré dans la référence (pas juste du gris)
+                // - ET maintenant c'est devenu neutre/gris (l'outil a été enlevé)
+                // - OU il y a une grande différence de couleur
+                const wasColored = coloredRatio > 0.3;
+                const becameNeutral = neutralRatio > 0.5;
+                const bigDifference = avgDiff > threshold;
+
+                const isMissing = bigDifference && (becameNeutral || (wasColored && neutralRatio > 0.4));
 
                 results.push({
                     region: region,
                     avgDiff: avgDiff,
-                    bgRatio: bgRatio,
+                    coloredRatio: coloredRatio,
+                    neutralRatio: neutralRatio,
                     isMissing: isMissing
                 });
             }
