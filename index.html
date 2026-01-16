@@ -847,60 +847,46 @@
             const results = [];
 
             for (const region of toolRegions) {
-                let totalDiff = 0;
                 let sampleCount = 0;
-                let refColoredPixels = 0; // Pixels colorés dans la référence
-                let curNeutralPixels = 0; // Pixels neutres (gris) dans l'actuelle
+                let curColoredPixels = 0; // Pixels colorés dans l'image actuelle (outil encore présent)
+                let curNeutralPixels = 0; // Pixels neutres/gris dans l'actuelle (outil enlevé)
 
-                // Échantillonner les pixels de la région
-                const sampleRate = Math.min(1, 800 / region.pixels.length);
-
+                // Échantillonner tous les pixels de la région
                 for (const p of region.pixels) {
-                    if (Math.random() > sampleRate) continue;
+                    // Échantillonner pour la performance
+                    if (region.pixels.length > 1000 && Math.random() > 0.5) continue;
 
                     const idx = (p.y * width + p.x) * 4;
-
-                    const refR = refPx[idx];
-                    const refG = refPx[idx + 1];
-                    const refB = refPx[idx + 2];
 
                     const curR = curPx[idx];
                     const curG = curPx[idx + 1];
                     const curB = curPx[idx + 2];
 
-                    // Différence de couleur entre ref et current
-                    const diff = (Math.abs(refR - curR) + Math.abs(refG - curG) + Math.abs(refB - curB)) / 3;
-                    totalDiff += diff;
                     sampleCount++;
 
-                    // Saturation du pixel de référence (est-ce coloré ?)
-                    const refSat = Math.max(refR, refG, refB) - Math.min(refR, refG, refB);
-                    if (refSat > 30) refColoredPixels++;
-
-                    // Saturation du pixel actuel (est-ce devenu neutre/gris ?)
+                    // Saturation du pixel actuel
                     const curSat = Math.max(curR, curG, curB) - Math.min(curR, curG, curB);
-                    if (curSat < 40) curNeutralPixels++;
+
+                    // Si le pixel actuel est coloré (saturation > 35), l'outil est encore là
+                    if (curSat > 35) {
+                        curColoredPixels++;
+                    } else {
+                        // Pixel neutre/gris = fond visible = outil enlevé
+                        curNeutralPixels++;
+                    }
                 }
 
-                const avgDiff = sampleCount > 0 ? totalDiff / sampleCount : 0;
-                const coloredRatio = sampleCount > 0 ? refColoredPixels / sampleCount : 0;
-                const neutralRatio = sampleCount > 0 ? curNeutralPixels / sampleCount : 0;
+                // Ratio de pixels colorés dans l'image actuelle à cet emplacement
+                const curColoredRatio = sampleCount > 0 ? curColoredPixels / sampleCount : 0;
 
-                // Un outil est manquant si :
-                // - L'outil était coloré dans la référence (pas juste du gris)
-                // - ET maintenant c'est devenu neutre/gris (l'outil a été enlevé)
-                // - OU il y a une grande différence de couleur
-                const wasColored = coloredRatio > 0.3;
-                const becameNeutral = neutralRatio > 0.5;
-                const bigDifference = avgDiff > threshold;
-
-                const isMissing = bigDifference && (becameNeutral || (wasColored && neutralRatio > 0.4));
+                // Un outil est MANQUANT si :
+                // - Moins de 25% des pixels sont encore colorés à cet emplacement
+                // (l'outil a été enlevé, on voit maintenant le fond gris)
+                const isMissing = curColoredRatio < 0.25;
 
                 results.push({
                     region: region,
-                    avgDiff: avgDiff,
-                    coloredRatio: coloredRatio,
-                    neutralRatio: neutralRatio,
+                    curColoredRatio: curColoredRatio,
                     isMissing: isMissing
                 });
             }
