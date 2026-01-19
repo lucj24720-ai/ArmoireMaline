@@ -848,15 +848,20 @@
 
             for (const region of toolRegions) {
                 let sampleCount = 0;
-                let curColoredPixels = 0; // Pixels colorés dans l'image actuelle (outil encore présent)
-                let curNeutralPixels = 0; // Pixels neutres/gris dans l'actuelle (outil enlevé)
+                let refColoredPixels = 0; // Pixels colorés dans la référence
+                let curColoredPixels = 0; // Pixels colorés dans l'image actuelle
+                let totalColorDiff = 0;   // Différence totale de couleur
 
-                // Échantillonner tous les pixels de la région
+                // Échantillonner les pixels de la région
                 for (const p of region.pixels) {
                     // Échantillonner pour la performance
-                    if (region.pixels.length > 1000 && Math.random() > 0.5) continue;
+                    if (region.pixels.length > 500 && Math.random() > 0.6) continue;
 
                     const idx = (p.y * width + p.x) * 4;
+
+                    const refR = refPx[idx];
+                    const refG = refPx[idx + 1];
+                    const refB = refPx[idx + 2];
 
                     const curR = curPx[idx];
                     const curG = curPx[idx + 1];
@@ -864,29 +869,39 @@
 
                     sampleCount++;
 
-                    // Saturation du pixel actuel
-                    const curSat = Math.max(curR, curG, curB) - Math.min(curR, curG, curB);
+                    // Vérifier si coloré dans la référence
+                    const refSat = Math.max(refR, refG, refB) - Math.min(refR, refG, refB);
+                    if (refSat > 30) refColoredPixels++;
 
-                    // Si le pixel actuel est coloré (saturation > 35), l'outil est encore là
-                    if (curSat > 35) {
-                        curColoredPixels++;
-                    } else {
-                        // Pixel neutre/gris = fond visible = outil enlevé
-                        curNeutralPixels++;
-                    }
+                    // Vérifier si coloré dans l'actuelle
+                    const curSat = Math.max(curR, curG, curB) - Math.min(curR, curG, curB);
+                    if (curSat > 30) curColoredPixels++;
+
+                    // Calculer la différence de couleur
+                    const colorDiff = Math.abs(refR - curR) + Math.abs(refG - curG) + Math.abs(refB - curB);
+                    totalColorDiff += colorDiff;
                 }
 
-                // Ratio de pixels colorés dans l'image actuelle à cet emplacement
+                const refColoredRatio = sampleCount > 0 ? refColoredPixels / sampleCount : 0;
                 const curColoredRatio = sampleCount > 0 ? curColoredPixels / sampleCount : 0;
+                const avgColorDiff = sampleCount > 0 ? totalColorDiff / sampleCount : 0;
 
                 // Un outil est MANQUANT si :
-                // - Moins de 25% des pixels sont encore colorés à cet emplacement
-                // (l'outil a été enlevé, on voit maintenant le fond gris)
-                const isMissing = curColoredRatio < 0.25;
+                // 1. Il y avait des pixels colorés dans la référence (c'est bien un outil)
+                // 2. ET il y a beaucoup moins de pixels colorés maintenant OU grande différence de couleur
+                const wasColoredTool = refColoredRatio > 0.15;
+                const colorDisappeared = curColoredRatio < refColoredRatio * 0.5; // Plus de 50% des couleurs ont disparu
+                const bigColorChange = avgColorDiff > 60;
+
+                const isMissing = wasColoredTool && (colorDisappeared || (bigColorChange && curColoredRatio < 0.3));
+
+                console.log(`Région: refColored=${refColoredRatio.toFixed(2)}, curColored=${curColoredRatio.toFixed(2)}, avgDiff=${avgColorDiff.toFixed(0)}, missing=${isMissing}`);
 
                 results.push({
                     region: region,
+                    refColoredRatio: refColoredRatio,
                     curColoredRatio: curColoredRatio,
+                    avgColorDiff: avgColorDiff,
                     isMissing: isMissing
                 });
             }
