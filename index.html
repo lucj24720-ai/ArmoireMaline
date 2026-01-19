@@ -129,6 +129,29 @@
 
         .drop-zone.has-image .clear-btn { display: block; }
 
+        .upload-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .upload-btn {
+            padding: 10px 16px;
+            border: 2px solid var(--primary);
+            background: white;
+            color: var(--primary);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
         /* Options */
         .options-section {
             background: var(--bg);
@@ -361,10 +384,15 @@
                         <h3>📸 Photo de référence</h3>
                         <p class="desc">Armoire complète (tous les outils)</p>
                         <div class="drop-zone" id="refDrop">
-                            <input type="file" id="refInput" accept="image/*" hidden>
+                            <input type="file" id="refInputGallery" accept="image/*" hidden>
+                            <input type="file" id="refInputCamera" accept="image/*" capture="environment" hidden>
                             <div class="drop-content">
                                 <span class="drop-icon">📁</span>
-                                <p>Cliquez pour importer ou prendre une photo</p>
+                                <p>Glissez une image ici</p>
+                                <div class="upload-buttons">
+                                    <button type="button" class="upload-btn" id="refGalleryBtn">🖼️ Galerie</button>
+                                    <button type="button" class="upload-btn" id="refCameraBtn">📷 Photo</button>
+                                </div>
                             </div>
                             <img id="refPreview" alt="Référence">
                             <button class="clear-btn" id="clearRef">×</button>
@@ -376,10 +404,15 @@
                         <h3>📷 Photo actuelle</h3>
                         <p class="desc">Armoire à vérifier</p>
                         <div class="drop-zone" id="curDrop">
-                            <input type="file" id="curInput" accept="image/*" hidden>
+                            <input type="file" id="curInputGallery" accept="image/*" hidden>
+                            <input type="file" id="curInputCamera" accept="image/*" capture="environment" hidden>
                             <div class="drop-content">
                                 <span class="drop-icon">📁</span>
-                                <p>Cliquez pour importer ou prendre une photo</p>
+                                <p>Glissez une image ici</p>
+                                <div class="upload-buttons">
+                                    <button type="button" class="upload-btn" id="curGalleryBtn">🖼️ Galerie</button>
+                                    <button type="button" class="upload-btn" id="curCameraBtn">📷 Photo</button>
+                                </div>
                             </div>
                             <img id="curPreview" alt="Actuelle">
                             <button class="clear-btn" id="clearCur">×</button>
@@ -453,8 +486,14 @@
         const els = {
             refDrop: document.getElementById('refDrop'),
             curDrop: document.getElementById('curDrop'),
-            refInput: document.getElementById('refInput'),
-            curInput: document.getElementById('curInput'),
+            refInputGallery: document.getElementById('refInputGallery'),
+            refInputCamera: document.getElementById('refInputCamera'),
+            curInputGallery: document.getElementById('curInputGallery'),
+            curInputCamera: document.getElementById('curInputCamera'),
+            refGalleryBtn: document.getElementById('refGalleryBtn'),
+            refCameraBtn: document.getElementById('refCameraBtn'),
+            curGalleryBtn: document.getElementById('curGalleryBtn'),
+            curCameraBtn: document.getElementById('curCameraBtn'),
             refPreview: document.getElementById('refPreview'),
             curPreview: document.getElementById('curPreview'),
             clearRef: document.getElementById('clearRef'),
@@ -475,12 +514,21 @@
             loadingText: document.getElementById('loadingText')
         };
 
-        // Setup drop zones
-        function setupDropZone(dropEl, inputEl, previewEl, clearBtn, isRef) {
-            dropEl.addEventListener('click', (e) => {
-                if (e.target !== clearBtn) inputEl.click();
+        // Setup drop zones avec boutons séparés
+        function setupDropZone(dropEl, galleryInput, cameraInput, galleryBtn, cameraBtn, previewEl, clearBtn, isRef) {
+            // Bouton galerie
+            galleryBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                galleryInput.click();
             });
 
+            // Bouton caméra
+            cameraBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                cameraInput.click();
+            });
+
+            // Drag & drop
             dropEl.addEventListener('dragover', e => {
                 e.preventDefault();
                 dropEl.classList.add('dragover');
@@ -494,15 +542,23 @@
                 if (e.dataTransfer.files[0]) loadImage(e.dataTransfer.files[0], previewEl, dropEl, isRef);
             });
 
-            inputEl.addEventListener('change', e => {
+            // Input change (galerie)
+            galleryInput.addEventListener('change', e => {
                 if (e.target.files[0]) loadImage(e.target.files[0], previewEl, dropEl, isRef);
             });
 
+            // Input change (caméra)
+            cameraInput.addEventListener('change', e => {
+                if (e.target.files[0]) loadImage(e.target.files[0], previewEl, dropEl, isRef);
+            });
+
+            // Bouton clear
             clearBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 previewEl.src = '';
                 dropEl.classList.remove('has-image');
-                inputEl.value = '';
+                galleryInput.value = '';
+                cameraInput.value = '';
                 if (isRef) refImage = null;
                 else curImage = null;
                 updateAnalyzeBtn();
@@ -992,8 +1048,8 @@
         }
 
         // Initialisation
-        setupDropZone(els.refDrop, els.refInput, els.refPreview, els.clearRef, true);
-        setupDropZone(els.curDrop, els.curInput, els.curPreview, els.clearCur, false);
+        setupDropZone(els.refDrop, els.refInputGallery, els.refInputCamera, els.refGalleryBtn, els.refCameraBtn, els.refPreview, els.clearRef, true);
+        setupDropZone(els.curDrop, els.curInputGallery, els.curInputCamera, els.curGalleryBtn, els.curCameraBtn, els.curPreview, els.clearCur, false);
     </script>
 </body>
 </html>
