@@ -842,66 +842,88 @@
 
         // Vérifier quels outils sont manquants
         function checkMissingTools(toolRegions, refData, curData, width, height, threshold, bgColors) {
-            const refPx = refData.data;
             const curPx = curData.data;
             const results = [];
 
+            // D'abord, créer un masque des pixels colorés dans l'image actuelle
+            // avec une zone élargie pour tolérer les petits décalages
+            const curColoredMask = new Uint8Array(width * height);
+
+            for (let i = 0; i < width * height; i++) {
+                const idx = i * 4;
+                const r = curPx[idx];
+                const g = curPx[idx + 1];
+                const b = curPx[idx + 2];
+
+                // Calculer la saturation
+                const sat = Math.max(r, g, b) - Math.min(r, g, b);
+                const brightness = (r + g + b) / 3;
+
+                // Pixel coloré = saturation élevée et pas trop sombre/clair
+                if (sat > 35 && brightness > 40 && brightness < 230) {
+                    curColoredMask[i] = 1;
+                }
+            }
+
+            // Dilater le masque pour tolérer les petits décalages entre les images
+            const dilatedMask = new Uint8Array(width * height);
+            const dilateRadius = 15; // Tolérance de 15 pixels
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    if (curColoredMask[y * width + x] === 1) {
+                        // Marquer tous les pixels dans un rayon
+                        for (let dy = -dilateRadius; dy <= dilateRadius; dy++) {
+                            for (let dx = -dilateRadius; dx <= dilateRadius; dx++) {
+                                const ny = y + dy;
+                                const nx = x + dx;
+                                if (ny >= 0 && ny < height && nx >= 0 && nx < width) {
+                                    dilatedMask[ny * width + nx] = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Pour chaque outil détecté dans la référence
             for (const region of toolRegions) {
-                let sampleCount = 0;
-                let refColoredPixels = 0; // Pixels colorés dans la référence
-                let curColoredPixels = 0; // Pixels colorés dans l'image actuelle
-                let totalColorDiff = 0;   // Différence totale de couleur
+                const box = region.boundingBox;
 
-                // Échantillonner les pixels de la région
-                for (const p of region.pixels) {
-                    // Échantillonner pour la performance
-                    if (region.pixels.length > 500 && Math.random() > 0.6) continue;
+                // Compter combien de pixels du centre de l'outil ont un objet coloré proche dans l'actuelle
+                let totalChecked = 0;
+                let foundColored = 0;
 
-                    const idx = (p.y * width + p.x) * 4;
+                // Vérifier le centre de la bounding box et autour
+                const centerX = box.x + box.width / 2;
+                const centerY = box.y + box.height / 2;
+                const checkRadius = Math.min(box.width, box.height) / 3;
 
-                    const refR = refPx[idx];
-                    const refG = refPx[idx + 1];
-                    const refB = refPx[idx + 2];
+                for (let dy = -checkRadius; dy <= checkRadius; dy += 3) {
+                    for (let dx = -checkRadius; dx <= checkRadius; dx += 3) {
+                        const checkX = Math.round(centerX + dx);
+                        const checkY = Math.round(centerY + dy);
 
-                    const curR = curPx[idx];
-                    const curG = curPx[idx + 1];
-                    const curB = curPx[idx + 2];
-
-                    sampleCount++;
-
-                    // Vérifier si coloré dans la référence
-                    const refSat = Math.max(refR, refG, refB) - Math.min(refR, refG, refB);
-                    if (refSat > 30) refColoredPixels++;
-
-                    // Vérifier si coloré dans l'actuelle
-                    const curSat = Math.max(curR, curG, curB) - Math.min(curR, curG, curB);
-                    if (curSat > 30) curColoredPixels++;
-
-                    // Calculer la différence de couleur
-                    const colorDiff = Math.abs(refR - curR) + Math.abs(refG - curG) + Math.abs(refB - curB);
-                    totalColorDiff += colorDiff;
+                        if (checkX >= 0 && checkX < width && checkY >= 0 && checkY < height) {
+                            totalChecked++;
+                            if (dilatedMask[checkY * width + checkX] === 1) {
+                                foundColored++;
+                            }
+                        }
+                    }
                 }
 
-                const refColoredRatio = sampleCount > 0 ? refColoredPixels / sampleCount : 0;
-                const curColoredRatio = sampleCount > 0 ? curColoredPixels / sampleCount : 0;
-                const avgColorDiff = sampleCount > 0 ? totalColorDiff / sampleCount : 0;
+                const coverageRatio = totalChecked > 0 ? foundColored / totalChecked : 0;
 
-                // Un outil est MANQUANT si :
-                // 1. Il y avait des pixels colorés dans la référence (c'est bien un outil)
-                // 2. ET il y a beaucoup moins de pixels colorés maintenant OU grande différence de couleur
-                const wasColoredTool = refColoredRatio > 0.15;
-                const colorDisappeared = curColoredRatio < refColoredRatio * 0.5; // Plus de 50% des couleurs ont disparu
-                const bigColorChange = avgColorDiff > 60;
+                // Un outil est MANQUANT si moins de 30% de sa zone centrale
+                // est couverte par des pixels colorés dans l'image actuelle
+                const isMissing = coverageRatio < 0.30;
 
-                const isMissing = wasColoredTool && (colorDisappeared || (bigColorChange && curColoredRatio < 0.3));
-
-                console.log(`Région: refColored=${refColoredRatio.toFixed(2)}, curColored=${curColoredRatio.toFixed(2)}, avgDiff=${avgColorDiff.toFixed(0)}, missing=${isMissing}`);
+                console.log(`Outil à (${box.x}, ${box.y}): coverage=${(coverageRatio * 100).toFixed(0)}%, missing=${isMissing}`);
 
                 results.push({
                     region: region,
-                    refColoredRatio: refColoredRatio,
-                    curColoredRatio: curColoredRatio,
-                    avgColorDiff: avgColorDiff,
+                    coverageRatio: coverageRatio,
                     isMissing: isMissing
                 });
             }
