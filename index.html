@@ -845,85 +845,61 @@
             const curPx = curData.data;
             const results = [];
 
-            // D'abord, créer un masque des pixels colorés dans l'image actuelle
-            // avec une zone élargie pour tolérer les petits décalages
-            const curColoredMask = new Uint8Array(width * height);
-
-            for (let i = 0; i < width * height; i++) {
-                const idx = i * 4;
-                const r = curPx[idx];
-                const g = curPx[idx + 1];
-                const b = curPx[idx + 2];
-
-                // Calculer la saturation
-                const sat = Math.max(r, g, b) - Math.min(r, g, b);
-                const brightness = (r + g + b) / 3;
-
-                // Pixel coloré = saturation élevée et pas trop sombre/clair
-                if (sat > 35 && brightness > 40 && brightness < 230) {
-                    curColoredMask[i] = 1;
-                }
-            }
-
-            // Dilater le masque pour tolérer les petits décalages entre les images
-            const dilatedMask = new Uint8Array(width * height);
-            const dilateRadius = 15; // Tolérance de 15 pixels
-
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    if (curColoredMask[y * width + x] === 1) {
-                        // Marquer tous les pixels dans un rayon
-                        for (let dy = -dilateRadius; dy <= dilateRadius; dy++) {
-                            for (let dx = -dilateRadius; dx <= dilateRadius; dx++) {
-                                const ny = y + dy;
-                                const nx = x + dx;
-                                if (ny >= 0 && ny < height && nx >= 0 && nx < width) {
-                                    dilatedMask[ny * width + nx] = 1;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // Pour chaque outil détecté dans la référence
             for (const region of toolRegions) {
                 const box = region.boundingBox;
 
-                // Compter combien de pixels du centre de l'outil ont un objet coloré proche dans l'actuelle
-                let totalChecked = 0;
-                let foundColored = 0;
+                // Élargir la zone de recherche pour tolérer les décalages
+                const margin = 30; // Marge de 30 pixels autour de l'outil
+                const searchX1 = Math.max(0, box.x - margin);
+                const searchY1 = Math.max(0, box.y - margin);
+                const searchX2 = Math.min(width, box.x + box.width + margin);
+                const searchY2 = Math.min(height, box.y + box.height + margin);
 
-                // Vérifier le centre de la bounding box et autour
-                const centerX = box.x + box.width / 2;
-                const centerY = box.y + box.height / 2;
-                const checkRadius = Math.min(box.width, box.height) / 3;
+                // Compter les pixels colorés dans cette zone élargie de l'image actuelle
+                let coloredPixelsInArea = 0;
+                let totalPixelsChecked = 0;
 
-                for (let dy = -checkRadius; dy <= checkRadius; dy += 3) {
-                    for (let dx = -checkRadius; dx <= checkRadius; dx += 3) {
-                        const checkX = Math.round(centerX + dx);
-                        const checkY = Math.round(centerY + dy);
+                for (let y = searchY1; y < searchY2; y += 2) {
+                    for (let x = searchX1; x < searchX2; x += 2) {
+                        const idx = (y * width + x) * 4;
+                        const r = curPx[idx];
+                        const g = curPx[idx + 1];
+                        const b = curPx[idx + 2];
 
-                        if (checkX >= 0 && checkX < width && checkY >= 0 && checkY < height) {
-                            totalChecked++;
-                            if (dilatedMask[checkY * width + checkX] === 1) {
-                                foundColored++;
-                            }
+                        totalPixelsChecked++;
+
+                        // Vérifier si c'est un pixel coloré (pas gris/blanc)
+                        const sat = Math.max(r, g, b) - Math.min(r, g, b);
+                        const brightness = (r + g + b) / 3;
+
+                        // Détecter les couleurs typiques des outils
+                        const isColored = sat > 30 && brightness > 35 && brightness < 235;
+
+                        if (isColored) {
+                            coloredPixelsInArea++;
                         }
                     }
                 }
 
-                const coverageRatio = totalChecked > 0 ? foundColored / totalChecked : 0;
+                // Calculer le ratio de pixels colorés dans la zone
+                const coloredRatio = totalPixelsChecked > 0 ? coloredPixelsInArea / totalPixelsChecked : 0;
 
-                // Un outil est MANQUANT si moins de 30% de sa zone centrale
-                // est couverte par des pixels colorés dans l'image actuelle
-                const isMissing = coverageRatio < 0.30;
+                // Calculer la surface minimale attendue pour un outil présent
+                // (basé sur la taille de l'outil dans la référence)
+                const toolAreaRatio = region.area / ((searchX2 - searchX1) * (searchY2 - searchY1));
+                const expectedMinRatio = toolAreaRatio * 0.3; // Au moins 30% de la taille originale
 
-                console.log(`Outil à (${box.x}, ${box.y}): coverage=${(coverageRatio * 100).toFixed(0)}%, missing=${isMissing}`);
+                // Un outil est MANQUANT seulement si :
+                // - Il y a très peu de pixels colorés dans la zone (< 5%)
+                // - OU le ratio est bien en dessous de ce qu'on attendrait
+                const isMissing = coloredRatio < 0.05 || coloredRatio < expectedMinRatio * 0.5;
+
+                console.log(`Outil à (${box.x}, ${box.y}): coloredRatio=${(coloredRatio * 100).toFixed(1)}%, expectedMin=${(expectedMinRatio * 100).toFixed(1)}%, missing=${isMissing}`);
 
                 results.push({
                     region: region,
-                    coverageRatio: coverageRatio,
+                    coloredRatio: coloredRatio,
                     isMissing: isMissing
                 });
             }
