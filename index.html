@@ -39,24 +39,66 @@
             position: relative;
         }
 
-        /* Fond avec outils */
-        body::before {
-            content: "🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚 🔧 🔨 🪛 🔩 🪚";
+        /* Fond avec outils - plusieurs couches */
+        body::before,
+        body::after {
             position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            font-size: 50px;
-            line-height: 100px;
-            letter-spacing: 40px;
-            word-spacing: 30px;
-            opacity: 0.15;
             pointer-events: none;
             z-index: 0;
-            white-space: pre-wrap;
-            transform: rotate(-20deg);
         }
+
+        body::before {
+            content: "🔧";
+            top: 5%;
+            left: 10%;
+            font-size: 80px;
+            opacity: 0.25;
+            transform: rotate(-15deg);
+        }
+
+        body::after {
+            content: "🔨";
+            top: 15%;
+            right: 8%;
+            font-size: 70px;
+            opacity: 0.25;
+            transform: rotate(20deg);
+        }
+
+        /* Outils supplémentaires via éléments HTML - dispersés partout */
+        .tool-bg {
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.35;
+            font-size: 60px;
+        }
+
+        .tool-1 { top: 3%; left: 5%; transform: rotate(-15deg); }
+        .tool-2 { top: 8%; left: 35%; transform: rotate(25deg); }
+        .tool-3 { top: 5%; right: 15%; transform: rotate(-30deg); }
+        .tool-4 { top: 12%; right: 3%; transform: rotate(10deg); }
+        .tool-5 { top: 22%; left: 8%; transform: rotate(35deg); }
+        .tool-6 { top: 28%; left: 45%; transform: rotate(-20deg); font-size: 55px; }
+        .tool-7 { top: 18%; right: 25%; transform: rotate(40deg); }
+        .tool-8 { top: 35%; left: 2%; transform: rotate(-25deg); }
+        .tool-9 { top: 40%; right: 5%; transform: rotate(15deg); font-size: 65px; }
+        .tool-10 { top: 32%; left: 70%; transform: rotate(-35deg); }
+        .tool-11 { top: 48%; left: 15%; transform: rotate(20deg); }
+        .tool-12 { top: 52%; left: 55%; transform: rotate(-10deg); font-size: 50px; }
+        .tool-13 { top: 45%; right: 20%; transform: rotate(30deg); }
+        .tool-14 { top: 58%; left: 3%; transform: rotate(-40deg); }
+        .tool-15 { top: 62%; right: 8%; transform: rotate(5deg); font-size: 70px; }
+        .tool-16 { top: 55%; left: 35%; transform: rotate(-15deg); }
+        .tool-17 { top: 68%; left: 10%; transform: rotate(25deg); }
+        .tool-18 { top: 72%; left: 50%; transform: rotate(-30deg); font-size: 55px; }
+        .tool-19 { top: 65%; right: 30%; transform: rotate(35deg); }
+        .tool-20 { top: 78%; left: 5%; transform: rotate(-20deg); }
+        .tool-21 { top: 75%; right: 5%; transform: rotate(10deg); }
+        .tool-22 { top: 82%; left: 40%; transform: rotate(-25deg); font-size: 65px; }
+        .tool-23 { top: 85%; left: 70%; transform: rotate(40deg); }
+        .tool-24 { top: 88%; left: 20%; transform: rotate(-35deg); }
+        .tool-25 { top: 92%; right: 15%; transform: rotate(15deg); font-size: 50px; }
 
         .container {
             max-width: 1200px;
@@ -422,6 +464,33 @@
     </style>
 </head>
 <body>
+    <!-- Outils en fond dispersés partout -->
+    <div class="tool-bg tool-1">🔧</div>
+    <div class="tool-bg tool-2">🔨</div>
+    <div class="tool-bg tool-3">🪛</div>
+    <div class="tool-bg tool-4">🔩</div>
+    <div class="tool-bg tool-5">🪚</div>
+    <div class="tool-bg tool-6">🔧</div>
+    <div class="tool-bg tool-7">🔨</div>
+    <div class="tool-bg tool-8">🪛</div>
+    <div class="tool-bg tool-9">🔩</div>
+    <div class="tool-bg tool-10">🪚</div>
+    <div class="tool-bg tool-11">🔧</div>
+    <div class="tool-bg tool-12">🔨</div>
+    <div class="tool-bg tool-13">🪛</div>
+    <div class="tool-bg tool-14">🔩</div>
+    <div class="tool-bg tool-15">🪚</div>
+    <div class="tool-bg tool-16">🔧</div>
+    <div class="tool-bg tool-17">🔨</div>
+    <div class="tool-bg tool-18">🪛</div>
+    <div class="tool-bg tool-19">🔩</div>
+    <div class="tool-bg tool-20">🪚</div>
+    <div class="tool-bg tool-21">🔧</div>
+    <div class="tool-bg tool-22">🔨</div>
+    <div class="tool-bg tool-23">🪛</div>
+    <div class="tool-bg tool-24">🔩</div>
+    <div class="tool-bg tool-25">🪚</div>
+
     <div class="container">
         <header>
             <h1>🔧 ArmoireMaline</h1>
