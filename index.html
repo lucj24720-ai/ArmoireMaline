@@ -36,12 +36,36 @@
             color: var(--text);
             line-height: 1.6;
             min-height: 100vh;
+            position: relative;
+        }
+
+        /* Fond avec outils */
+        body::before {
+            content: "🔧 🔨 🪛 🔩 ✂️ 🪚 🔧 🔨 🪛 🔩 ✂️ 🪚 🔧 🔨 🪛 🔩 ✂️ 🪚 🔧 🔨 🪛 🔩 ✂️ 🪚 🔧 🔨 🪛 🔩 ✂️ 🪚 🔧 🔨 🪛 🔩 ✂️ 🪚";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            font-size: 40px;
+            line-height: 80px;
+            letter-spacing: 30px;
+            word-spacing: 20px;
+            opacity: 0.07;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+            white-space: pre-wrap;
+            transform: rotate(-15deg) scale(1.5);
+            transform-origin: center center;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         header {
